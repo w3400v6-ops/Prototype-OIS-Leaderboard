@@ -3,71 +3,22 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>OIS Admin Panel</title>
+  <title>OIS Admin - Manage Scores</title>
   <style>
-    body { 
-      font-family: 'Arial', sans-serif; 
-      background: #f0f4f8; 
-      display: flex; 
-      justify-content: center; 
-      padding: 40px; 
+    body {
+      margin: 0;
+      font-family: 'Arial', sans-serif;
+      background: #f0f4f8;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+      padding: 20px;
     }
 
-    .container { 
-      background: white; 
-      padding: 30px; 
-      border-radius: 15px; 
-      box-shadow: 0 4px 15px rgba(0,0,0,0.1); 
-      width: 100%; 
-      max-width: 400px; 
-    }
-
-    h2 { 
-      text-align: center; 
-      color: #333; 
-    }
-
-    label { 
-      font-weight: bold; 
-      display: block; 
-      margin-top: 15px; 
-      color: #555; 
-    }
-
-    input, select, textarea, button { 
-      width: 100%; 
-      padding: 12px; 
-      margin: 8px 0; 
-      border: 1px solid #ddd; 
-      border-radius: 8px; 
-      box-sizing: border-box; 
-    }
-
-    button { 
-      background: #0077ff; 
-      color: white; 
-      border: none; 
-      cursor: pointer; 
-      font-weight: bold; 
-      transition: 0.3s; 
-    }
-
-    button:hover { 
-      background: #005ecb; 
-    }
-
-    .hidden { 
-      display: none; 
-    }
-
-    .error { 
-      color: #d32f2f; 
-      font-size: 0.9em; 
-      text-align: center; 
-    }
-
+    /* Back Button */
     .back-btn {
-      position: absolute; /* Moves it independently of the centered container */
+      position: absolute;
       top: 25px;
       left: 25px;
       text-decoration: none;
@@ -77,205 +28,295 @@
       display: flex;
       align-items: center;
       gap: 5px;
-      transition: transform 0.2s ease, color 0.2s ease;
     }
 
-    .back-btn:hover {
-      color: #005ecb;
-      transform: translateX(-3px); /* Subtle nudge to the left on hover */
+    .container {
+      background: white;
+      padding: 30px;
+      border-radius: 20px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+      width: 100%;
+      max-width: 500px;
+      margin-top: 60px;
     }
+
+    h2, h3 { text-align: center; color: #333; margin-bottom: 20px; }
+    label { font-weight: bold; display: block; margin-top: 15px; color: #555; font-size: 0.85em; }
+    
+    input, select, textarea, button {
+      width: 100%;
+      padding: 12px;
+      margin: 8px 0;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      box-sizing: border-box;
+      font-size: 1em;
+    }
+
+    button { background: #0077ff; color: white; border: none; cursor: pointer; font-weight: bold; transition: 0.3s; }
+    button:hover { background: #005ecb; }
+    .logout-btn { background: #666; margin-top: 20px; }
+
+    .hidden { display: none; }
+
+    /* Leaderboard Mini-View */
+    .leaderboard { margin-bottom: 30px; display: flex; flex-direction: column; gap: 10px; }
+    
+    .house {
+      display: flex;
+      align-items: center;
+      padding: 12px 20px;
+      background: #f9f9f9;
+      border-radius: 12px;
+    }
+    
+    .house img {
+      width: 40px;
+      height: 40px;
+      margin-right: 15px;
+    }
+
+    .house .info { flex-grow: 1; }
+    .house .name { font-weight: bold; margin-left: 15px; font-size: 1.1em; }
+    .house .score { font-weight: bold; color: #0077ff; font-size: 1.2em; }
+    .house.leader { background: #e0f7ff; }
+
+    /* --- SHIMMER LOADING EFFECT --- */
+    /* 1. The base gray style for skeletons */
+    .skeleton {
+      background-color: #e2e5e7;
+      background-image: linear-gradient(
+        90deg, 
+        rgba(255, 255, 255, 0) 0, 
+        rgba(255, 255, 255, 0.5) 50%, 
+        rgba(255, 255, 255, 0) 100%
+      );
+      background-size: 200% 100%;
+      animation: shimmer 1.5s infinite;
+      border-radius: 4px;
+      display: inline-block;
+    }
+
+    /* 2. The shimmer animation */
+    @keyframes shimmer {
+      0% { background-position: -200% 0; }
+      100% { background-position: 200% 0; }
+    }
+
+    /* 3. Specific sizes for our skeletons */
+    .skeleton-img { width: 40px; height: 40px; border-radius: 10%; }
+    .skeleton-name { width: 200px; height: 25px; margin-left: 5px; }
+    .skeleton-score { width: 25px; height: 25px; border-radius: 10%; }
+    /* ---------------------------- */
+
+    hr { border: 0; border-top: 2px solid #eee; margin: 30px 0; }
   </style>
 </head>
-<body>
+<body class="loading"> <a href="index.html" class="back-btn"><span>←</span> Back</a>
 
-<div class="container">
-  <div id="login-section">
-    <h2>Admin Login</h2>
-    <input type="email" id="email" placeholder="Email">
-    <input type="password" id="password" placeholder="Password">
-    <button onclick="login()">Login</button>
-    <p id="login-error" class="error"></p>
+  <div class="container">
+    <div id="login-section">
+      <h2>Admin Login</h2>
+      <input type="email" id="email" placeholder="Email">
+      <input type="password" id="password" placeholder="Password">
+      <button onclick="login()">Login</button>
+    </div>
+
+    <div id="admin-section" class="hidden">
+      <h3>Current Live Scores</h3>
+      <div class="leaderboard" id="admin-leaderboard">
+        <div class="house" data-house="red" id="red">
+          <div class="skeleton skeleton-img"></div> <div class="info">
+            <p class="name"><span class="skeleton skeleton-name"></span></p>
+          </div>
+          <div class="score"><span class="skeleton skeleton-score"></span></div>
+        </div>
+
+        <div class="house" data-house="blue"  id="blue">
+          <div class="skeleton skeleton-img"></div> <div class="info">
+            <p class="name"><span class="skeleton skeleton-name"></span></p>
+          </div>
+          <div class="score"><span class="skeleton skeleton-score"></span></div>
+        </div>
+
+        <div class="house" data-house="green"  id="green">
+          <div class="skeleton skeleton-img"></div> <div class="info">
+            <p class="name"><span class="skeleton skeleton-name"></span></p>
+          </div>
+          <div class="score"><span class="skeleton skeleton-score"></span></div>
+        </div>
+
+        <div class="house" data-house="yellow"  id="yellow">
+          <div class="skeleton skeleton-img"></div> <div class="info">
+            <p class="name"><span class="skeleton skeleton-name"></span></p>
+          </div>
+          <div class="score"><span class="skeleton skeleton-score"></span></div>
+        </div>
+      </div>
+
+      <hr>
+
+      <h3>Update House Scores</h3>
+      
+      <label>Select House:</label>
+      <select id="house-select"></select>
+
+      <label>Add Points:</label>
+      <input type="number" id="points" value="1">
+
+      <label>Category (Optional):</label>
+      <select id="category-select">
+        <option value="General/Other">-- General / Other --</option>
+      </select>
+
+      <label>Comments (Optional):</label>
+      <textarea id="comment" placeholder="Add details here..."></textarea>
+
+      <button onclick="updateScore()">Submit Update</button>
+      <button onclick="logout()" class="logout-btn">Admin Logout</button>
+    </div>
   </div>
 
-  <div id="admin-section" class="hidden">
-    <h2>Update Scores</h2>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyBIIEQt0ryHNulKYNmfCliMywmSzzQuBls",
+      authDomain: "my-epic-database.firebaseapp.com",
+      databaseURL: "https://my-epic-database-default-rtdb.firebaseio.com",
+      projectId: "my-epic-database",
+      storageBucket: "my-epic-database.appspot.com",
+      messagingSenderId: "533989527206",
+      appId: "1:533989527206:web:d34c0a693e6f19dc43ae67"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db = firebase.database();
+
+    const houseEls = Array.from(document.querySelectorAll('.house'))
+
+    function login() {
+      const email = document.getElementById('email').value;
+      const pass = document.getElementById('password').value;
+      auth.signInWithEmailAndPassword(email, pass).catch(err => alert("Login Failed."));
+    }
     
-    <label>Select House:</label>
-    <select id="house-select">
-      <option value="">Loading houses...</option>
-    </select>
+    function logout() { auth.signOut().then(() => location.reload()); }
 
-    <label>Add Points (Max 10):</label>
-    <input type="number" id="points" min="1" max="10" value="1">
-
-    <label>Category:</label>
-    <select id="category-select">
-      <option value="">Loading categories...</option>
-    </select>
-
-    <label>Comments:</label>
-    <textarea id="comment" placeholder="Describe why points were awarded"></textarea>
-
-    <button onclick="updateScore()">Update & Log Entry</button>
-    <button onclick="logout()" style="background: #666; margin-top: 20px;">Logout</button>
-  </div>
-</div>
-
-<a href="index.html" class="back-btn">
-  <span>←</span> Back to Leaderboard
-</a>
-
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
-
-<script>
-  // Your existing Firebase Config
-  const firebaseConfig = {
-    apiKey: "AIzaSyBIIEQt0ryHNulKYNmfCliMywmSzzQuBls",
-    authDomain: "my-epic-database.firebaseapp.com",
-    databaseURL: "https://my-epic-database-default-rtdb.firebaseio.com",
-    projectId: "my-epic-database",
-    storageBucket: "my-epic-database.appspot.com",
-    messagingSenderId: "533989527206",
-    appId: "1:533989527206:web:d34c0a693e6f19dc43ae67"
-  };
-
-  firebase.initializeApp(firebaseConfig);
-  const auth = firebase.auth();
-  const db = firebase.database();
-
-  // LOGIN LOGIC
-  function login() {
-    const email = document.getElementById('email').value;
-    const pass = document.getElementById('password').value;
-    auth.signInWithEmailAndPassword(email, pass).catch(err => {
-      document.getElementById('login-error').innerText = "Invalid credentials.";
-    });
-  }
-
-  function logout() {
-    auth.signOut().then(() => location.reload());
-  }
-
-  // --- SESSION TIMEOUT LOGIC ---
-  let idleTimer;
-  const TIMEOUT_DURATION = 10 * 60 * 1000; // 10 minutes in milliseconds
-
-  function resetTimer() {
-      // Clear the existing timer whenever there is activity
-      clearTimeout(idleTimer);
-      
-      // Start a new timer
-      idleTimer = setTimeout(() => {
-          alert("Session expired due to inactivity. Logging out...");
-          logout();
-      }, TIMEOUT_DURATION);
-  }
-
-  // Start watching for activity only when the user is logged in
-  function startIdleTracking() {
-      // Events that count as "activity"
-      const activityEvents = ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart'];
-      
-      activityEvents.forEach(event => {
-          document.addEventListener(event, resetTimer, true);
-      });
-
-      // Initialize the first timer
-      resetTimer();
-  }
-
-  // Update your existing Auth State observer
-  auth.onAuthStateChanged(user => {
+    auth.onAuthStateChanged(user => {
       if (user) {
-          document.getElementById('login-section').classList.add('hidden');
-          document.getElementById('admin-section').classList.remove('hidden');
-          fetchDropdownData();
-          
-          // START THE TIMER HERE
-          startIdleTracking();
+        document.getElementById('login-section').classList.add('hidden');
+        document.getElementById('admin-section').classList.remove('hidden');
+        fetchInitialData();
+        startLeaderboardListener();
+        startIdleTracking();
       }
-  });
-
-  // FETCH HOUSES AND CATEGORIES FROM DB
-  function fetchDropdownData() {
-    // 1. Fetch Houses
-    db.ref('Houses').once('value', snapshot => {
-      const houseSelect = document.getElementById('house-select');
-      houseSelect.innerHTML = ""; // Clear loader
-      snapshot.forEach(child => {
-        const houseId = child.key;
-        const houseName = child.val().name;
-        let opt = new Option(houseName, houseId);
-        houseSelect.add(opt);
-      });
     });
 
-    // 2. Fetch Categories
-    db.ref('Categories').once('value', snapshot => {
-      const catSelect = document.getElementById('category-select');
-      catSelect.innerHTML = ""; // Clear loader
-      snapshot.forEach(child => {
-        let opt = new Option(child.val(), child.val());
-        catSelect.add(opt);
+    function fetchInitialData() {
+      db.ref('Houses').once('value', snapshot => {
+        const select = document.getElementById('house-select');
+        select.innerHTML = "";
+        snapshot.forEach(child => {
+          select.add(new Option(child.val().name, child.key));
+        });
       });
-    });
-  }
 
-  // SUBMIT UPDATE
-  function updateScore() {
-    const houseId = document.getElementById('house-select').value;
-    const houseName = document.getElementById('house-select').options[document.getElementById('house-select').selectedIndex].text;
-    const addedPoints = parseInt(document.getElementById('points').value);
-    const category = document.getElementById('category-select').value;
-    const comment = document.getElementById('comment').value;
-
-    // Validation
-    if (addedPoints > 10 || addedPoints < 1) {
-      alert("Point limit exceeded! Max 10.");
-      return;
-    }
-    if (!comment) {
-      alert("Please add a comment.");
-      return;
+      db.ref('Categories').once('value', snapshot => {
+        const select = document.getElementById('category-select');
+        // Keep the "General" option at the top
+        snapshot.forEach(child => {
+          select.add(new Option(child.val(), child.val()));
+        });
+      });
     }
 
-    // Generate a readable Date and Time string
-    const now = new Date();
-    const readableDate = now.toLocaleDateString(); // e.g., "1/29/2026"
-    const readableTime = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }); // e.g., "1:35 PM"
-    const fullTimestamp = `${readableDate} ${readableTime}`;
+    function updateScore() {
+      const houseId = document.getElementById('house-select').value;
+      const houseName = document.getElementById('house-select').options[document.getElementById('house-select').selectedIndex].text;
+      const addedPoints = parseInt(document.getElementById('points').value);
+      const category = document.getElementById('category-select').value;
+      const comment = document.getElementById('comment').value || "No comment provided"; // Handle empty comment
 
-    const houseRef = db.ref(`Houses/${houseId}`);
+      if (isNaN(addedPoints)) return alert("Please enter a valid number.");
 
-    let oldScore = 0;
+      const now = new Date();
+      const fullTimestamp = `${now.toLocaleDateString()} ${now.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}`;
+      
+      let oldScore = 0;
+      const houseRef = db.ref(`Houses/${houseId}`);
 
-    houseRef.child('score').transaction(currentScore => {
-      oldScore = currentScore || 0;
-      return (currentScore || 0) + addedPoints;
-    }).then(() => {
-      // Add the new readable fields to the Log
-      const logRef = db.ref('Logs').push();
-      logRef.set({
-        fullDateTime: fullTimestamp, // Combined for easy reading
-        unixTimestamp: firebase.database.ServerValue.TIMESTAMP, // Kept for backend sorting
-        houseId: houseId,
-        houseName: houseName,
-        previousPoints: oldScore,
-        pointsAdded: addedPoints,
-        newPoints: oldScore + addedPoints,
-        category: category,
-        comment: comment,
-        adminEmail: auth.currentUser.email
+      houseRef.child('score').transaction(current => {
+        oldScore = current || 0;
+        return oldScore + addedPoints;
+      }).then((result) => {
+        if(result.committed) {
+          db.ref('Logs').push().set({
+            fullDateTime: fullTimestamp,
+            unixTimestamp: firebase.database.ServerValue.TIMESTAMP,
+            houseId: houseId, houseName: houseName,
+            previousPoints: oldScore, pointsAdded: addedPoints, newTotal: oldScore + addedPoints,
+            category: category, comment: comment, adminEmail: auth.currentUser.email
+          });
+          alert("Points Added!");
+          document.getElementById('comment').value = "";
+        }
       });
+    }
 
-      alert(`Success! Added ${addedPoints} points to ${houseName}`);
-      document.getElementById('comment').value = ""; 
-    }).catch(err => {
-      alert("Update failed: " + err.message);
-    });
-  }
-</script>
+    function startLeaderboardListener() {
+      const houseIds = ['red', 'blue', 'green', 'yellow'];
+      db.ref('Houses').on('value', snapshot => {
+        const data = snapshot.val();
+        if(!data) return;
+        // Remove loading state once data arrives
+        document.body.classList.remove('loading');
+
+        houseEls.forEach(el => {
+          const key = el.dataset.house;
+          const scoreEl = el.querySelector('.score');
+          const nameEl = el.querySelector('.name');
+
+          // 1. Re-insert the real image (replaces the skeleton-img div)
+          // Adjust the path to your local image files
+          const imgMap = {
+            red: 'icons8-red-panda-100.png',
+            blue: 'icons8-animal-100.png',
+            green: 'icons8-green-64.png',
+            yellow: 'icons8-bee-top-view-100.png'
+          };
+          
+          // 1. Set names and scores immediately after loading
+          el.innerHTML = `
+            <img src="${imgMap[key]}" alt="${data[key].name}">
+            <div class="info"><p class="name">${data[key].name}</p></div>
+            <div class="score">${data[key].score}</div>
+          `;
+        });
+
+        const sorted = houseIds.slice().sort((a,b) => (data[b]?.score || 0) - (data[a]?.score || 0));
+        sorted.forEach((id, i) => {
+          document.getElementById(id).style.order = i;
+          document.getElementById(id).classList.remove('leader');
+        });
+        document.getElementById(sorted[0]).classList.add('leader');
+      });
+    }
+
+    let idleTimer;
+    function resetTimer() {
+      clearTimeout(idleTimer);
+      idleTimer = setTimeout(() => { logout(); }, 10 * 60 * 1000);
+    }
+    function startIdleTracking() {
+      ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart'].forEach(e => {
+        document.addEventListener(e, resetTimer, true);
+      });
+      resetTimer();
+    }
+  </script>
 </body>
 </html>
