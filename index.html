@@ -152,15 +152,41 @@
       
       }
 
-      .house.moving-up {
-        /* This connects the JS trigger to the keyframe */
-        animation: lift-and-slide 0.8s cubic-bezier(0.4, 0, 0.2, 1) forwards;
-      }
+    .house.moving-up {
+      /* This connects the JS trigger to the keyframe */
+      animation: lift-and-slide 0.8s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+    }
 
-      /* Ensure other cards slide smoothly out of the way */
-      .house:not(.moving-up) {
-        transition: transform 0.6s ease-out;
-      }
+    /* Ensure other cards slide smoothly out of the way */
+    .house:not(.moving-up) {
+      transition: transform 0.6s ease-out;
+    }
+
+    /* 1. The base gray style for skeletons */
+    .skeleton {
+      background-color: #e2e5e7;
+      background-image: linear-gradient(
+        90deg, 
+        rgba(255, 255, 255, 0) 0, 
+        rgba(255, 255, 255, 0.5) 50%, 
+        rgba(255, 255, 255, 0) 100%
+      );
+      background-size: 200% 100%;
+      animation: shimmer 1.5s infinite;
+      border-radius: 4px;
+      display: inline-block;
+    }
+
+    /* 2. The shimmer animation */
+    @keyframes shimmer {
+      0% { background-position: -200% 0; }
+      100% { background-position: 200% 0; }
+    }
+
+    /* 3. Specific sizes for our skeletons */
+    .skeleton-img { width: 60px; height: 60px; border-radius: 10%; }
+    .skeleton-name { width: 200px; height: 40px; margin-left: 10px; }
+    .skeleton-score { width: 40px; height: 40px; border-radius: 10%; }
         
 * {
     -webkit-tap-highlight-color: transparent;
@@ -231,28 +257,32 @@
   <h1>OIS Leaderboard</h1>
 
   <div class="leaderboard">
-    <div class="house" data-house="red"  id="red">
-      <img src="icons8-red-panda-100.png" alt="Red House Logo">
-      <div class="info"><p class="name">Loading...</p></div>
-      <div class="score">0</div>
+    <div class="house" data-house="red" id="red">
+      <div class="skeleton skeleton-img"></div> <div class="info">
+        <p class="name"><span class="skeleton skeleton-name"></span></p>
+      </div>
+      <div class="score"><span class="skeleton skeleton-score"></span></div>
     </div>
 
     <div class="house" data-house="blue"  id="blue">
-      <img src="icons8-animal-100.png" alt="Blue House Logo">
-      <div class="info"><p class="name">Loading...</p></div>
-      <div class="score">0</div>
+      <div class="skeleton skeleton-img"></div> <div class="info">
+        <p class="name"><span class="skeleton skeleton-name"></span></p>
+      </div>
+      <div class="score"><span class="skeleton skeleton-score"></span></div>
     </div>
 
     <div class="house" data-house="green"  id="green">
-      <img src="icons8-green-64.png" alt="Green House Logo">
-      <div class="info"><p class="name">Loading...</p></div>
-      <div class="score">0</div>
+      <div class="skeleton skeleton-img"></div> <div class="info">
+        <p class="name"><span class="skeleton skeleton-name"></span></p>
+      </div>
+      <div class="score"><span class="skeleton skeleton-score"></span></div>
     </div>
 
     <div class="house" data-house="yellow"  id="yellow">
-      <img src="icons8-bee-top-view-100.png" alt="Yellow House Logo">
-      <div class="info"><p class="name">Loading...</p></div>
-      <div class="score">0</div>
+      <div class="skeleton skeleton-img"></div> <div class="info">
+        <p class="name"><span class="skeleton skeleton-name"></span></p>
+      </div>
+      <div class="score"><span class="skeleton skeleton-score"></span></div>
     </div>
   </div>
 
@@ -289,6 +319,7 @@
 
     // House IDs
     const houseEls = Array.from(document.querySelectorAll('.house')); // "const" is a local variable that value can't be changed and that can only be use under <script> = block-scoped
+    //quearySelector select all components in website that is ".house" decalre in the CSS and html
     let currentData = {}; // "let" is a local variable that can only be use under <script> = block-scoped
     let initialized = false;
     
@@ -375,9 +406,22 @@
           const scoreEl = el.querySelector('.score');
           const nameEl = el.querySelector('.name');
 
-          // 1. Set names and scores immediately (no animation)
-          nameEl.textContent = data[key].name;
-          scoreEl.textContent = data[key].score;
+          // 1. Re-insert the real image (replaces the skeleton-img div)
+          // Adjust the path to your local image files
+          const imgMap = {
+            red: 'icons8-red-panda-100.png',
+            blue: 'icons8-animal-100.png',
+            green: 'icons8-green-64.png',
+            yellow: 'icons8-bee-top-view-100.png'
+          };
+          
+          // 1. Set names and scores immediately after loading
+          el.innerHTML = `
+            <img src="${imgMap[key]}" alt="${data[key].name}">
+            <div class="info"><p class="name">${data[key].name}</p></div>
+            <div class="score">${data[key].score}</div>
+          `;
+
           currentData[key] = data[key].score;
         });
 
