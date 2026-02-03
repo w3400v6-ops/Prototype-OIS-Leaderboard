@@ -288,8 +288,8 @@
     console.log("DB object:", db); // test
 
     // House IDs
-    const houseEls = Array.from(document.querySelectorAll('.house'));
-    let currentData = {};
+    const houseEls = Array.from(document.querySelectorAll('.house')); // "const" is a local variable that value can't be changed and that can only be use under <script> = block-scoped
+    let currentData = {}; // "let" is a local variable that can only be use under <script> = block-scoped
     let initialized = false;
     
 
@@ -370,33 +370,32 @@
 
       // 🟡 FIRST LOAD
       if(!initialized){
-        let delay = 0;
-
         houseEls.forEach(el => {
           const key = el.dataset.house;
           const scoreEl = el.querySelector('.score');
           const nameEl = el.querySelector('.name');
 
+          // 1. Set names and scores immediately (no animation)
           nameEl.textContent = data[key].name;
-          scoreEl.textContent = 0;
+          scoreEl.textContent = data[key].score;
           currentData[key] = data[key].score;
-
-          setTimeout(() => {
-            animateScore(scoreEl, 0, data[key].score);
-          }, delay);
-
-          delay += 400; // one-by-one effect
         });
 
-        setTimeout(() => {
-          const sorted = [...houseEls].sort(
-            (a,b) => data[b.dataset.house].score - data[a.dataset.house].score
-          );
-          animateCards(sorted);
-          initialized = true;
-        }, delay + 1000);
+        // 2. Sort them by score immediately
+        const sorted = [...houseEls].sort(
+          (a,b) => data[b.dataset.house].score - data[a.dataset.house].score
+        );
 
-        return;
+        // 3. Apply the order right now
+        sorted.forEach((el, i) => {
+          el.style.order = i;
+        });
+
+        // 4. Mark the leader (optional)
+        sorted[0].classList.add('leader');
+
+        initialized = true; // Setup is done!
+        return; // Stop here so we don't trigger the "Live Update" logic below
       }
 
       // 🟢 LIVE UPDATES
@@ -454,3 +453,6 @@
 
 </body>
 </html>
+
+
+
