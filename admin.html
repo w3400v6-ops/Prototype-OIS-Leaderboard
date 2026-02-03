@@ -257,11 +257,16 @@
           db.ref('Logs').push().set({
             fullDateTime: fullTimestamp,
             unixTimestamp: firebase.database.ServerValue.TIMESTAMP,
-            houseId: houseId, houseName: houseName,
-            previousPoints: oldScore, pointsAdded: addedPoints, newTotal: oldScore + addedPoints,
-            category: category, comment: comment, adminEmail: auth.currentUser.email
+            houseId: houseId, 
+            houseName: houseName,
+            previousPoints: oldScore, 
+            pointsAdded: addedPoints, 
+            newTotal: oldScore + addedPoints,
+            category: category, 
+            comment: comment, 
+            adminEmail: auth.currentUser.email
           });
-          alert("Points Added!");
+          alert(`Success! Added ${addedPoints} points to ${houseName}`);
           document.getElementById('comment').value = "";
         }
       });
