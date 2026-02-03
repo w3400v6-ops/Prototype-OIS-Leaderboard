@@ -158,13 +158,44 @@
     auth.signOut().then(() => location.reload());
   }
 
-  // AUTH STATE CHECK
+  // --- SESSION TIMEOUT LOGIC ---
+  let idleTimer;
+  const TIMEOUT_DURATION = 10 * 60 * 1000; // 10 minutes in milliseconds
+
+  function resetTimer() {
+      // Clear the existing timer whenever there is activity
+      clearTimeout(idleTimer);
+      
+      // Start a new timer
+      idleTimer = setTimeout(() => {
+          alert("Session expired due to inactivity. Logging out...");
+          logout();
+      }, TIMEOUT_DURATION);
+  }
+
+  // Start watching for activity only when the user is logged in
+  function startIdleTracking() {
+      // Events that count as "activity"
+      const activityEvents = ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart'];
+      
+      activityEvents.forEach(event => {
+          document.addEventListener(event, resetTimer, true);
+      });
+
+      // Initialize the first timer
+      resetTimer();
+  }
+
+  // Update your existing Auth State observer
   auth.onAuthStateChanged(user => {
-    if (user) {
-      document.getElementById('login-section').classList.add('hidden');
-      document.getElementById('admin-section').classList.remove('hidden');
-      fetchDropdownData();
-    }
+      if (user) {
+          document.getElementById('login-section').classList.add('hidden');
+          document.getElementById('admin-section').classList.remove('hidden');
+          fetchDropdownData();
+          
+          // START THE TIMER HERE
+          startIdleTracking();
+      }
   });
 
   // FETCH HOUSES AND CATEGORIES FROM DB
@@ -218,19 +249,22 @@
 
     const houseRef = db.ref(`Houses/${houseId}`);
 
+    let oldScore = 0;
+
     houseRef.child('score').transaction(currentScore => {
+      oldScore = currentScore || 0;
       return (currentScore || 0) + addedPoints;
     }).then(() => {
       // Add the new readable fields to the Log
       const logRef = db.ref('Logs').push();
       logRef.set({
-        date: readableDate,
-        time: readableTime,
         fullDateTime: fullTimestamp, // Combined for easy reading
         unixTimestamp: firebase.database.ServerValue.TIMESTAMP, // Kept for backend sorting
         houseId: houseId,
         houseName: houseName,
+        previousPoints: oldScore,
         pointsAdded: addedPoints,
+        newPoints: oldScore + addedPoints,
         category: category,
         comment: comment,
         adminEmail: auth.currentUser.email
