@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>OIS Admin - Manage Scores</title>
   <link rel="icon" type="image/png" href="favicon-32x32.png">
-  
+
   <style>
     body {
       margin: 0;
@@ -57,7 +57,7 @@
 
     button { background: #0077ff; color: white; border: none; cursor: pointer; font-weight: bold; transition: 0.3s; }
     button:hover { background: #005ecb; }
-    .logout-btn { background: #666; margin-top: 20px; }
+    .logout-btn { background: #666; margin-top: 10px; }
 
     .hidden { display: none; }
 
@@ -82,6 +82,24 @@
     .house .name { font-weight: bold; margin-left: 15px; font-size: 1.1em; }
     .house .score { font-weight: bold; color: #0077ff; font-size: 1.2em; }
     .house.leader { background: #e0f7ff; }
+
+    textarea  
+    {  
+      width: 100%;
+      padding: 12px;
+      margin: 8px 0;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      box-sizing: border-box;
+      font-size: 1em;
+    
+      resize: none; 
+      height: 100px;
+
+      font-family:"Arial", sans-serif;  
+      font-size: 15px;   
+    }
+    
 
     /* --- SHIMMER LOADING EFFECT --- */
     /* 1. The base gray style for skeletons */
@@ -163,13 +181,28 @@
       <label>Select House:</label>
       <select id="house-select"></select>
 
-      <label>Add Points:</label>
-      <input type="number" id="points" value="1">
-
-      <label>Category (Optional):</label>
-      <select id="category-select">
-        <option value="General/Other">-- General / Other --</option>
+      <label>Event Type:</label>
+      <select id="event-type-select" onchange="updateRankingDropdown()">
+        <option value="">-- Select Event Type --</option>
+        <option value="Group">Group</option>
+        <option value="Individual">Individual</option>
       </select>
+
+      <label>Ranking:</label>
+      <select id="ranking-select">
+        <option value="">-- Select Event Type First --</option>
+      </select>
+
+      <label>Category:</label>
+      <select id="category-select" onchange="toggleCustomCategory()">
+        <option value="">-- Select a Category --</option>
+        <option value="Other">Other (Type below...)</option>
+      </select>
+
+      <div id="custom-category-container" class="hidden">
+        <label>Enter Custom Category:</label>
+        <input type="text" id="custom-category-input" placeholder="e.g., House Logo Design">
+      </div>
 
       <label>Comments (Optional):</label>
       <textarea id="comment" placeholder="Add details here..."></textarea>
@@ -200,6 +233,8 @@
 
     const houseEls = Array.from(document.querySelectorAll('.house'))
 
+    let eventTypeData = {}; // Global variable to store points from DB
+
     function login() {
       const email = document.getElementById('email').value;
       const pass = document.getElementById('password').value;
@@ -218,6 +253,18 @@
       }
     });
 
+    // 1. Handle showing/hiding the "Other" text box
+    function toggleCustomCategory() {
+      const select = document.getElementById('category-select');
+      const customContainer = document.getElementById('custom-category-container');
+      
+      if (select.value === "Other") {
+        customContainer.classList.remove('hidden');
+      } else {
+        customContainer.classList.add('hidden');
+      }
+    }
+
     function fetchInitialData() {
       db.ref('Houses').once('value', snapshot => {
         const select = document.getElementById('house-select');
@@ -229,21 +276,72 @@
 
       db.ref('Categories').once('value', snapshot => {
         const select = document.getElementById('category-select');
-        // Keep the "General" option at the top
+        // Clear everything except the first (Select) and last (Other)
+        const otherOption = select.options[select.options.length - 1];
+        const placeholder = select.options[0];
+        
+        select.innerHTML = "";
+        select.add(placeholder);
+        
         snapshot.forEach(child => {
           select.add(new Option(child.val(), child.val()));
         });
+        
+        select.add(otherOption);
+      });
+
+      db.ref('EventType').once('value', snapshot => {
+        eventTypeData = snapshot.val();
+      });
+    }
+
+    function updateRankingDropdown() {
+      const type = document.getElementById('event-type-select').value;
+      const rankSelect = document.getElementById('ranking-select');
+      rankSelect.innerHTML = "";
+
+      if (!type || !eventTypeData[type]) {
+        rankSelect.add(new Option("-- Select Event Type First --", ""));
+        return;
+      }
+
+      const scores = eventTypeData[type];
+      rankSelect.add(new Option("-- Select Ranking --", ""));
+
+      // Loop through 1, 2, 3, (and 4 if Group)
+      Object.keys(scores).forEach(rank => {
+        const pts = scores[rank];
+        const suffix = (rank == 1) ? "st" : (rank == 2) ? "nd" : (rank == 3) ? "rd" : "th";
+        const text = `${rank}${suffix} place - ${pts} points`;
+        rankSelect.add(new Option(text, pts)); // Value is the actual points
       });
     }
 
     function updateScore() {
       const houseId = document.getElementById('house-select').value;
       const houseName = document.getElementById('house-select').options[document.getElementById('house-select').selectedIndex].text;
-      const addedPoints = parseInt(document.getElementById('points').value);
-      const category = document.getElementById('category-select').value;
       const comment = document.getElementById('comment').value || "No comment provided"; // Handle empty comment
 
-      if (isNaN(addedPoints)) return alert("Please enter a valid number.");
+      // Category Logic
+      const categorySelect = document.getElementById('category-select');
+      let category = categorySelect.value;
+
+      // Points are now taken from the ranking dropdown value
+      const addedPoints = parseInt(document.getElementById('ranking-select').value);
+      const eventType = document.getElementById('event-type-select').value;
+
+      if (category === "Other") {
+        category = document.getElementById('custom-category-input').value.trim();
+      }
+
+      // --- VALIDATIONS ---
+      if (!eventType) return alert("Please select an Event Type.");
+      if (isNaN(addedPoints)) return alert("Please select a Ranking.");
+      if (!category) return alert("Category is required.");
+
+      if (!category || category === "") {
+        return alert("Category Required: Please select a category or enter a custom one under 'Other'.");
+      }
 
       const now = new Date();
       const fullTimestamp = `${now.toLocaleDateString()} ${now.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}`;
@@ -265,11 +363,19 @@
             pointsAdded: addedPoints, 
             newTotal: oldScore + addedPoints,
             category: category, 
+            eventType: eventType,
             comment: comment, 
             adminEmail: auth.currentUser.email
           });
+
           alert(`Success! Added ${addedPoints} points to ${houseName}`);
+
           document.getElementById('comment').value = "";
+          document.getElementById('custom-category-input').value = "";
+          document.getElementById('ranking-select').selectedIndex = 0;
+          document.getElementById('event-type-select').selectedIndex = 0;
+          categorySelect.selectedIndex = 0;
+          toggleCustomCategory();
         }
       });
     }
@@ -327,5 +433,3 @@
   </script>
 </body>
 </html>
-
-
