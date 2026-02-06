@@ -99,6 +99,54 @@
       font-family:"Arial", sans-serif;  
       font-size: 15px;   
     }
+
+    .logs-container {
+      margin-top: 20px;
+      width: 100%;
+      overflow-x: auto;
+    }
+
+    #logs-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.85em;
+      background: #fff;
+      border-radius: 8px;
+      overflow: hidden;
+    }
+
+    #logs-table th, #logs-table td {
+      padding: 12px;
+      text-align: left;
+      border-bottom: 1px solid #eee;
+    }
+
+    #logs-table th {
+      background-color: #f8f9fa;
+      color: #666;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    #logs-table tr:last-child td {
+      border-bottom: none;
+    }
+
+    .read-more {
+      color: #0077ff;
+      text-decoration: none;
+      font-weight: bold;
+      font-size: 0.9em;
+    }
+
+    .read-more:hover {
+      text-decoration: underline;
+    }
+
+
+    /* Style for the description highlights */
+    .log-house { font-weight: bold; color: #333; }
+    .log-points { font-weight: bold; color: #0077ff; }
     
 
     /* --- SHIMMER LOADING EFFECT --- */
@@ -209,8 +257,28 @@
 
       <button onclick="updateScore()">Submit Update</button>
       <button onclick="logout()" class="logout-btn">Logout</button>
+
+      <hr>
+      <h3>Recent Activity</h3>
+      <div class="logs-container">
+        <table id="logs-table">
+          <thead>
+            <tr>
+              <th>Time</th>
+              <th>Description</th>
+            </tr>
+          </thead>
+          <tbody id="logs-body"></tbody>
+        </table>
+        <div id="read-more-container" style="text-align: center; margin-top: 15px;">
+          <button type="button" id="read-more-btn" class="read-more-btn" onclick="expandLogs()">Read more...</button>
+        </div>
+      </div>
+
     </div>
   </div>
+
+  
 
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
@@ -250,6 +318,7 @@
         fetchInitialData();
         startLeaderboardListener();
         startIdleTracking();
+        startLogsListener();
       }
     });
 
@@ -330,6 +399,9 @@
       const addedPoints = parseInt(document.getElementById('ranking-select').value);
       const eventType = document.getElementById('event-type-select').value;
 
+      const rankSelect = document.getElementById('ranking-select');
+      const rankText = rankSelect.options[rankSelect.selectedIndex].text.split(' - ')[0];
+
       if (category === "Other") {
         category = document.getElementById('custom-category-input').value.trim();
       }
@@ -357,6 +429,7 @@
           db.ref('Logs').push().set({
             fullDateTime: fullTimestamp,
             unixTimestamp: firebase.database.ServerValue.TIMESTAMP,
+            rankText: rankText,
             houseId: houseId, 
             houseName: houseName,
             previousPoints: oldScore, 
@@ -416,6 +489,62 @@
           document.getElementById(id).classList.remove('leader');
         });
         document.getElementById(sorted[0]).classList.add('leader');
+      });
+    }
+
+    let displayLimit = 5; // Start with 5
+
+    function expandLogs() {
+      displayLimit = 50; // Increase to 50 (or whatever number you prefer)
+      startLogsListener(); // Restart the listener with the new limit
+      document.getElementById('read-more-container').classList.add('hidden'); // Hide the button
+    }
+
+    function startLogsListener() {
+      const logsRef = db.ref('Logs');
+
+      // 1. First, check the total count of logs to see if we even need a button
+      logsRef.once('value', totalSnapshot => {
+        const totalCount = totalSnapshot.numChildren();
+        const readMoreContainer = document.getElementById('read-more-container');
+
+        // If total logs in DB is more than what we are currently displaying, show button
+        if (totalCount > displayLimit) {
+          readMoreContainer.classList.remove('hidden');
+        } else {
+          readMoreContainer.classList.add('hidden');
+        }
+      });
+
+      // Listen for the last 5 logs
+      logsRef.orderByChild('unixTimestamp').limitToLast(displayLimit).on('value', snapshot => {
+        const logsBody = document.getElementById('logs-body');
+        logsBody.innerHTML = ""; // Clear current table
+
+        const logs = [];
+        snapshot.forEach(child => {
+          logs.push(child.val());
+        });
+
+        // Reverse so the newest is at the top
+        logs.reverse().forEach(log => {
+          const row = logsBody.insertRow();
+          
+          // Column 1: Time
+          const timeCell = row.insertCell(0);
+          timeCell.innerHTML = `<span style="white-space: nowrap;">${log.fullDateTime}</span>`;
+
+          // Column 2: Description
+          const descCell = row.insertCell(1);
+          //const pointText = log.pointsAdded > 0 ? `added ${log.pointsAdded}` : `removed ${Math.abs(log.pointsAdded)}`;
+          const rankInfo = log.rankText ? `${log.rankText}` : "";
+          
+          descCell.innerHTML = `
+            <span class="log-house">${log.houseName}</span> added <span class="log-house">${log.pointsAdded} points </span> for winning
+            <span class="log-house"> ${rankInfo}</span> in <span class="log-house">${log.category}</span>. 
+            <br><small style="color:#888;">"${log.comment}" — ${log.adminEmail}</small>
+          `;
+        });
       });
     }
 
