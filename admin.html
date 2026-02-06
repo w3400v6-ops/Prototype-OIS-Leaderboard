@@ -42,6 +42,7 @@
       margin-top: 60px;
     }
 
+    hr { border: 0; border-top: 2px solid #eee; margin: 30px 0; }
     h2, h3 { text-align: center; color: #333; margin-bottom: 20px; }
     label { font-weight: bold; display: block; margin-top: 15px; color: #555; font-size: 0.85em; }
     
@@ -124,7 +125,6 @@
     #logs-table th {
       background-color: #f8f9fa;
       color: #666;
-      text-transform: uppercase;
       letter-spacing: 0.05em;
     }
 
@@ -177,7 +177,66 @@
     .skeleton-score { width: 25px; height: 25px; border-radius: 10%; }
     /* ---------------------------- */
 
-    hr { border: 0; border-top: 2px solid #eee; margin: 30px 0; }
+    /* Recycle Bin Icon Style */
+    .icon-btn {
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 5px;
+      border-radius: 4px;
+      transition: background 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-left: auto;
+    }
+
+    .icon-btn:hover { background: #fee2e2; }
+    .icon-btn svg { fill: #ef4444; width: 20px; height: 20px; }
+
+    /* Recycle Bin Section Styles */
+    .recycle-section {
+      margin-top: 50px;
+      background: #fdf2f2;
+      border: 1px solid #fecaca;
+      padding: 20px;
+      border-radius: 12px;
+    }
+
+    .recycle-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.8em;
+      color: #7f1d1d;
+    }
+
+    .recycle-table th { text-align: left; padding: 10px; border-bottom: 1px solid #fecaca; }
+    .recycle-table td { padding: 10px; border-bottom: 1px solid #fee2e2; }
+
+    /* Restore Icon Style */
+    .restore-btn {
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 5px;
+      border-radius: 4px;
+      transition: background 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .restore-btn:hover { background: #dcfce7; }
+    .restore-btn svg { fill: #22c55e; width: 20px; height: 20px; }
+
+    /* Adjusting the recycle table for the new button */
+    .recycle-table td:last-child {
+      display: flex;
+      gap: 10px;
+      justify-content: flex-end;
+    }
+
+  
   </style>
 </head>
 <body class="loading"> <a href="index.html" class="back-btn"><span>←</span> Back</a>
@@ -266,6 +325,7 @@
             <tr>
               <th>Time</th>
               <th>Description</th>
+              <th></th>
             </tr>
           </thead>
           <tbody id="logs-body"></tbody>
@@ -275,9 +335,20 @@
         </div>
       </div>
 
+      <div class="recycle-section">
+        <h3>Recently Deleted</h3>
+        <table class="recycle-table">
+          <thead>
+            <tr>
+              <th>Deleted At</th>
+              <th>Record</th>
+              <th>Action</th> </tr>
+          </thead>
+          <tbody id="recycle-body"></tbody>
+        </table>
+      </div>
     </div>
   </div>
-
   
 
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -319,6 +390,7 @@
         startLeaderboardListener();
         startIdleTracking();
         startLogsListener();
+        startRecycleBinListener();
       }
     });
 
@@ -504,7 +576,7 @@
       const logsRef = db.ref('Logs');
 
       // 1. First, check the total count of logs to see if we even need a button
-      logsRef.once('value', totalSnapshot => {
+      logsRef.on('value', totalSnapshot => {
         const totalCount = totalSnapshot.numChildren();
         const readMoreContainer = document.getElementById('read-more-container');
 
@@ -523,7 +595,12 @@
 
         const logs = [];
         snapshot.forEach(child => {
-          logs.push(child.val());
+          // 1. Get the data fields (houseName, pointsAdded, etc.)
+          const data = child.val();
+          // 2. Get the UNIQUE ID (the key like -Njk123...)
+          const id = child.key;
+          // 3. Combine them into one object and push to our array
+          logs.push({ id: id, ...data });
         });
 
         // Reverse so the newest is at the top
@@ -544,8 +621,121 @@
             <span class="log-house"> ${rankInfo}</span> in <span class="log-house">${log.category}</span>. 
             <br><small style="color:#888;">"${log.comment}" — ${log.adminEmail}</small>
           `;
+
+          const actionCell = row.insertCell(2);
+          const btn = document.createElement('button');
+          btn.className = "icon-btn";
+          btn.title = "Delete and Revert Points";
+          btn.innerHTML = `
+            <svg viewBox="0 0 24 24">
+              <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
+            </svg>`;
+          btn.onclick = () => deleteLog(log.id, log);
+          actionCell.appendChild(btn)
         });
       });
+    }
+
+    function deleteLog(logId, logData) {
+      console.log(logId);
+      const confirmation = confirm(`Are you sure you want to delete this log? This will remove ${logData.pointsAdded} points from ${logData.houseName}.`);
+      
+      if (!confirmation) return;
+
+      const houseRef = db.ref(`Houses/${logData.houseId}/score`);
+
+      // 1. Revert the math using a transaction
+      houseRef.transaction(currentScore => {
+        // To reverse, we SUBTRACT the points that were originally added
+        return (currentScore || 0) - logData.pointsAdded;
+      }).then((result) => {
+        if (result.committed) {
+          // 2. Add the log to the Recycle node
+          const recycleRef = db.ref('Recycle').push();
+          recycleRef.set({
+            ...logData,
+            deletedAt: firebase.database.ServerValue.TIMESTAMP,
+            deletedBy: auth.currentUser.email
+          });
+
+          // 3. Remove the original log from Logs
+          return db.ref('Logs').child(logId).remove();
+          alert("Log deleted and points reverted!");
+        }
+      }).catch(err => {
+        alert("Error reverting points: " + err.message);
+      });
+    }
+
+    function startRecycleBinListener() {
+      const recycleRef = db.ref('Recycle');
+
+      recycleRef.on('value', snapshot => {
+        const recycleBody = document.getElementById('recycle-body');
+        recycleBody.innerHTML = ""; // Clear table once before the loop
+
+        const deletedItems = [];
+        snapshot.forEach(child => {
+          // Capture the ID (key) so we can restore it later
+          deletedItems.push({ recycleKey: child.key, ...child.val() });
+        });
+
+        // Sort by deletion time (newest first)
+        deletedItems.sort((a, b) => b.deletedAt - a.deletedAt);
+
+        // Limit to last 5 for now
+        deletedItems.slice(0, 5).forEach(item => {
+          const row = recycleBody.insertRow();
+          
+          const deletedAt = new Date(item.deletedAt).toLocaleString([], {year:"numeric", month:'numeric', day:'numeric', hour:'2-digit', minute:'2-digit'});
+          
+          row.insertCell(0).innerHTML = `${deletedAt}`;
+          
+          const actionText = item.pointsAdded > 0 ? "added" : "removed";
+          row.insertCell(1).innerHTML = `
+            <strong>${item.houseName}</strong> ${actionText} <strong>${Math.abs(item.pointsAdded)} points </strong>
+            by winning <strong>${item.rankText}</strong> in <strong>${item.category}</strong>
+            <br><small> Deleted by — ${item.deletedBy}</small>
+          `;
+
+          // Restore Button Column
+          const actionCell = row.insertCell(2);
+          const btn = document.createElement('button');
+          btn.className = "restore-btn";
+          btn.title = "Restore Log and Re-apply Points";
+          btn.innerHTML = `
+            <svg viewBox="0 0 24 24">
+              <path d="M13 3c-4.97 0-9 4.03-9 9H1l3.89 3.89.07.14L9 12H6c0-3.87 3.13-7 7-7s7 3.13 7 7-3.13 7-7 7c-1.93 0-3.68-.79-4.94-2.06l-1.42 1.42C8.27 19.99 10.51 21 13 21c4.97 0 9-4.03 9-9s-4.03-9-9-9z"/>
+            </svg>`;
+          
+          btn.onclick = () => restoreLog(item.recycleKey, item);
+          actionCell.appendChild(btn);
+        });
+      });
+    }
+
+    function restoreLog(recycleId, itemData) {
+      console.log(recycleId);
+      const confirmation = confirm(`Restore this log? This will restore ${itemData.pointsAdded} points to ${itemData.houseName}.`);
+      if (!confirmation) return;
+
+      const houseRef = db.ref(`Houses/${itemData.houseId}/score`);
+      
+      // 1. Put the points back
+      houseRef.transaction(current => (current || 0) + itemData.pointsAdded)
+        .then(() => {
+          // 2. Move back to Logs (removing deletion-specific metadata)
+          const { deletedAt, deletedBy, id, ...originalLogData } = itemData;
+          return db.ref('Logs').push().set(originalLogData);
+        })
+        .then(() => {
+          // 3. Remove from Recycle Bin
+          return db.ref('Recycle').child(recycleId).remove();
+        })
+        .then(() => {
+          alert("Log restored successfully!");
+        })
+        .catch(err => alert("Restore failed: " + err.message));
     }
 
     let idleTimer;
