@@ -295,14 +295,6 @@
 </head>
 <body>
 
-  <div id="auth-overlay" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(240, 244, 248, 0.95); z-index: 9999; display: flex; flex-direction: column; align-items: center; justify-content: center;">
-    <h2 style="color: #333; margin-bottom: 20px;">OIS Leaderboard</h2>
-    <button id="login-btn" style="padding: 15px 30px; font-size: 1.2em; background: #0077ff; color: white; border: none; border-radius: 10px; cursor: pointer; box-shadow: 0 4px 15px rgba(0,119,255,0.3);">
-        Sign in with School Email
-    </button>
-    <p id="error-msg" style="color: red; margin-top: 15px; display: none;">Please use your @ois.edu.my email.</p>
-</div>
-
   <h1>OIS Leaderboard</h1>
 
   <div class="leaderboard">
@@ -343,12 +335,11 @@
   </a>
 
   <!-- Firebase v9 compat -->
-  <script type="module">
-    // 1. Import necessary Firebase modules
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
-    import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-database.js";
-    import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 
+  <script>
+    // Firebase config - replace with your project info
     const firebaseConfig = {
       apiKey: "AIzaSyBIIEQt0ryHNulKYNmfCliMywmSzzQuBls",
       authDomain: "my-epic-database.firebaseapp.com",
@@ -356,54 +347,22 @@
       projectId: "my-epic-database",
       storageBucket: "my-epic-database.appspot.com",
       messagingSenderId: "533989527206",
-      appId: "1:533989527206:web:d34c0a693e6f19dc43ae67"
+      appId: "1:533989527206:web:d34c0a693e6f19dc43ae67",
+      measurementId: "G-QCK28GGW59"
     };
 
-    // Initialize
-    const app = initializeApp(firebaseConfig);
-    const db = getDatabase(app);
-    const auth = getAuth(app);
-    const provider = new GoogleAuthProvider();
-    
-    // Forces the login picker to only show your school domain accounts
-    provider.setCustomParameters({ hd: "oakbridge.edu.my" }); // Update this to your exact school domain
+    // Initialize Firebase
+    const app = firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
 
-    const houseEls = Array.from(document.querySelectorAll('.house'));
-    let currentData = {};
+    console.log("Firebase initialized"); // test
+    console.log("DB object:", db); // test
+
+    // House IDs
+    const houseEls = Array.from(document.querySelectorAll('.house')); // "const" is a local variable that value can't be changed and that can only be use under <script> = block-scoped
+    //quearySelector select all components in website that is ".house" decalre in the CSS and html
+    let currentData = {}; // "let" is a local variable that can only be use under <script> = block-scoped
     let initialized = false;
-
-    // --- AUTHENTICATION FLOW ---
-
-    const authOverlay = document.getElementById('auth-overlay');
-    const loginBtn = document.getElementById('login-btn');
-    const errorMsg = document.getElementById('error-msg');
-
-    // 1. Check if they are already logged in
-    onAuthStateChanged(auth, (user) => {
-      if (user && user.email.endsWith('@oakbridge.edu.my')) {
-        authOverlay.style.display = 'none'; // Hide overlay
-        startLeaderboard();
-      } else {
-        authOverlay.style.display = 'flex'; // Show login button
-      }
-    });
-
-    // 2. Handle the Button Click (Browsers allow popups here!)
-    loginBtn.addEventListener('click', () => {
-      signInWithPopup(auth, provider)
-        .then((result) => {
-          if (!result.user.email.endsWith('@oakbridge.edu.my')) {
-            errorMsg.style.display = 'block';
-            auth.signOut();
-          }
-        })
-        .catch((error) => {
-          if (error.code === 'auth/popup-blocked') {
-            alert("Please enable popups for this website to sign in.");
-          }
-          console.error("Auth Error:", error);
-        });
-    });
     
 
     // 🔢 Score animation
