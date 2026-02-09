@@ -294,6 +294,11 @@
         <option value="Other">Other (Type below...)</option>
       </select>
 
+      <div id="custom-category-container" class="hidden">
+        <label>Enter Custom Category:</label>
+        <input type="text" id="custom-category-input" placeholder="e.g., House Logo Design">
+      </div>
+
       <label>Event Type:</label>
       <select id="event-type-select" onchange="updateRankingDropdown()">
         <option value="">-- Select Event Type --</option>
@@ -305,12 +310,6 @@
       <select id="ranking-select">
         <option value="">-- Select Event Type First --</option>
       </select>
-
-
-      <div id="custom-category-container" class="hidden">
-        <label>Enter Custom Category:</label>
-        <input type="text" id="custom-category-input" placeholder="e.g., House Logo Design">
-      </div>
 
       <label>Comments (Optional):</label>
       <textarea id="comment" placeholder="Add details here..."></textarea>
@@ -568,7 +567,7 @@
     let displayLimit = 5; // Start with 5
 
     function expandLogs() {
-      displayLimit = 50; // Increase to 50 (or whatever number you prefer)
+      displayLimit = 10; // Increase to 50 (or whatever number you prefer)
       startLogsListener(); // Restart the listener with the new limit
       document.getElementById('read-more-container').classList.add('hidden'); // Hide the button
     }
