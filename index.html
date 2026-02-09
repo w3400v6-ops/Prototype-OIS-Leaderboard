@@ -366,7 +366,7 @@
     const provider = new GoogleAuthProvider();
     
     // Forces the login picker to only show your school domain accounts
-    provider.setCustomParameters({ hd: "ois.edu.my" }); // Update this to your exact school domain
+    provider.setCustomParameters({ hd: "oakbridge.edu.my" }); // Update this to your exact school domain
 
     const houseEls = Array.from(document.querySelectorAll('.house'));
     let currentData = {};
@@ -380,7 +380,7 @@
 
     // 1. Check if they are already logged in
     onAuthStateChanged(auth, (user) => {
-      if (user && user.email.endsWith('@ois.edu.my')) {
+      if (user && user.email.endsWith('@oakbridge.edu.my')) {
         authOverlay.style.display = 'none'; // Hide overlay
         startLeaderboard();
       } else {
@@ -392,7 +392,7 @@
     loginBtn.addEventListener('click', () => {
       signInWithPopup(auth, provider)
         .then((result) => {
-          if (!result.user.email.endsWith('@ois.edu.my')) {
+          if (!result.user.email.endsWith('@oakbridge.edu.my')) {
             errorMsg.style.display = 'block';
             auth.signOut();
           }
