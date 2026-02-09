@@ -335,11 +335,12 @@
   </a>
 
   <!-- Firebase v9 compat -->
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+  <script type="module">
+    // 1. Import necessary Firebase modules
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
+    import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-database.js";
+    import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
 
-  <script>
-    // Firebase config - replace with your project info
     const firebaseConfig = {
       apiKey: "AIzaSyBIIEQt0ryHNulKYNmfCliMywmSzzQuBls",
       authDomain: "my-epic-database.firebaseapp.com",
@@ -347,22 +348,38 @@
       projectId: "my-epic-database",
       storageBucket: "my-epic-database.appspot.com",
       messagingSenderId: "533989527206",
-      appId: "1:533989527206:web:d34c0a693e6f19dc43ae67",
-      measurementId: "G-QCK28GGW59"
+      appId: "1:533989527206:web:d34c0a693e6f19dc43ae67"
     };
 
-    // Initialize Firebase
-    const app = firebase.initializeApp(firebaseConfig);
-    const db = firebase.database();
+    // Initialize
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+    const auth = getAuth(app);
+    const provider = new GoogleAuthProvider();
+    
+    // Forces the login picker to only show your school domain accounts
+    provider.setCustomParameters({ hd: "ois.edu.my" }); // Update this to your exact school domain
 
-    console.log("Firebase initialized"); // test
-    console.log("DB object:", db); // test
-
-    // House IDs
-    const houseEls = Array.from(document.querySelectorAll('.house')); // "const" is a local variable that value can't be changed and that can only be use under <script> = block-scoped
-    //quearySelector select all components in website that is ".house" decalre in the CSS and html
-    let currentData = {}; // "let" is a local variable that can only be use under <script> = block-scoped
+    const houseEls = Array.from(document.querySelectorAll('.house'));
+    let currentData = {};
     let initialized = false;
+
+    // --- AUTHENTICATION FLOW ---
+
+    // This checks if the user is already logged in
+    onAuthStateChanged(auth, (user) => {
+      if (user) {
+        if (user.email.endsWith('@ois.edu.my')) { // Domain Check
+          startLeaderboard();
+        } else {
+          alert("Access Denied: Use your school email!");
+          auth.signOut();
+        }
+      } else {
+        // If not logged in, trigger the popup
+        signInWithPopup(auth, provider).catch(err => console.error("Login Error:", err));
+      }
+    });
     
 
     // 🔢 Score animation
