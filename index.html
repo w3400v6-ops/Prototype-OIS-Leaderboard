@@ -295,6 +295,14 @@
 </head>
 <body>
 
+  <div id="auth-overlay" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(240, 244, 248, 0.95); z-index: 9999; display: flex; flex-direction: column; align-items: center; justify-content: center;">
+    <h2 style="color: #333; margin-bottom: 20px;">OIS Leaderboard</h2>
+    <button id="login-btn" style="padding: 15px 30px; font-size: 1.2em; background: #0077ff; color: white; border: none; border-radius: 10px; cursor: pointer; box-shadow: 0 4px 15px rgba(0,119,255,0.3);">
+        Sign in with School Email
+    </button>
+    <p id="error-msg" style="color: red; margin-top: 15px; display: none;">Please use your @ois.edu.my email.</p>
+</div>
+
   <h1>OIS Leaderboard</h1>
 
   <div class="leaderboard">
@@ -366,19 +374,35 @@
 
     // --- AUTHENTICATION FLOW ---
 
-    // This checks if the user is already logged in
+    const authOverlay = document.getElementById('auth-overlay');
+    const loginBtn = document.getElementById('login-btn');
+    const errorMsg = document.getElementById('error-msg');
+
+    // 1. Check if they are already logged in
     onAuthStateChanged(auth, (user) => {
-      if (user) {
-        if (user.email.endsWith('@ois.edu.my')) { // Domain Check
-          startLeaderboard();
-        } else {
-          alert("Access Denied: Use your school email!");
-          auth.signOut();
-        }
+      if (user && user.email.endsWith('@ois.edu.my')) {
+        authOverlay.style.display = 'none'; // Hide overlay
+        startLeaderboard();
       } else {
-        // If not logged in, trigger the popup
-        signInWithPopup(auth, provider).catch(err => console.error("Login Error:", err));
+        authOverlay.style.display = 'flex'; // Show login button
       }
+    });
+
+    // 2. Handle the Button Click (Browsers allow popups here!)
+    loginBtn.addEventListener('click', () => {
+      signInWithPopup(auth, provider)
+        .then((result) => {
+          if (!result.user.email.endsWith('@ois.edu.my')) {
+            errorMsg.style.display = 'block';
+            auth.signOut();
+          }
+        })
+        .catch((error) => {
+          if (error.code === 'auth/popup-blocked') {
+            alert("Please enable popups for this website to sign in.");
+          }
+          console.error("Auth Error:", error);
+        });
     });
     
 
