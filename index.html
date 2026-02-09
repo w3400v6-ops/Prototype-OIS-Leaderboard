@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>OIS Leaderboard</title>
   <link rel="icon" type="image/png" href="favicon-32x32.png">
+
   <style>
     body {
       margin: 0;
@@ -97,6 +98,31 @@
       transform: scale(1.05);
     }
 
+    /* The Crown Icon itself (hidden by default) */
+    .crown-icon {
+      position: absolute;
+      top: -30px; /* Adjust to move up/down */
+      left: -18px; /* Adjust to move left/right */
+      width: 45px;
+      height: 45px;
+      z-index: 20; /* Sit on top of everything */
+      transform: rotate(-25deg); /* Tilt left */
+      opacity: 0; /* Hidden by default */
+      transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); /* Bouncy entry */
+      pointer-events: none; /* Let clicks pass through to the card */
+    }
+
+    /* THE TRIGGER: Make it visible only on the leader card */
+    .house.leader .crown-icon {
+      opacity: 1;
+      transform: rotate(-25deg) scale(1); /* Ensure it's full size when visible */
+    }
+
+    /* Optional: A slight pop effect when it becomes leader */
+    .house.leader.updating .crown-icon {
+      transform: rotate(-25deg) scale(1.3);
+    }
+
     .admin-login-btn {
       position: fixed;
       top: 20px;
@@ -186,8 +212,15 @@
 
     /* 3. Specific sizes for our skeletons */
     .skeleton-img { width: 60px; height: 60px; border-radius: 10%; }
-    .skeleton-name { width: 200px; height: 40px; margin-left: 10px; }
+    .skeleton-name { width: 200px; height: 35px; margin-left: 10px; }
     .skeleton-score { width: 40px; height: 40px; border-radius: 10%; }
+
+    
+
+    /* Adjust table to accommodate the button */
+    #logs-table td:last-child {
+      text-align: right;
+    }
         
 * {
     -webkit-tap-highlight-color: transparent;
@@ -240,6 +273,13 @@
       width: 20px;
       height: 20px;
     }
+
+    .crown-icon {
+    width: 35px;
+    height: 35px;
+    top: -12px;
+    left: -12px;
+  }
   }
 
   @media (min-width: 1200px) {
@@ -295,11 +335,12 @@
   </a>
 
   <!-- Firebase v9 compat -->
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
+    import { initializeAppCheck, ReCaptchaV3Provider } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app-check.js";
+    import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-database.js";
 
-  <script>
-    // Firebase config - replace with your project info
+    // 1. Your Firebase configuration
     const firebaseConfig = {
       apiKey: "AIzaSyBIIEQt0ryHNulKYNmfCliMywmSzzQuBls",
       authDomain: "my-epic-database.firebaseapp.com",
@@ -311,9 +352,17 @@
       measurementId: "G-QCK28GGW59"
     };
 
-    // Initialize Firebase
-    const app = firebase.initializeApp(firebaseConfig);
-    const db = firebase.database();
+    // 2. Initialize Firebase
+    const app = initializeApp(firebaseConfig);
+
+    // 3. INITIALIZE APP CHECK
+    // Replace 'YOUR_RECAPTCHA_SITE_KEY' with the key from Google reCAPTCHA Admin
+    const appCheck = initializeAppCheck(app, {
+      provider: new ReCaptchaV3Provider('6LdKIWUsAAAAAMSQiBISR4Gcca8WrQi0F75QINHl'),
+      isTokenAutoRefreshEnabled: true
+    });
+
+    const db = getDatabase(app);
 
     console.log("Firebase initialized"); // test
     console.log("DB object:", db); // test
@@ -498,8 +547,6 @@
 
 </body>
 </html>
-
-
 
 
 
