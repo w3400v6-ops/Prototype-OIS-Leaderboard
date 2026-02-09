@@ -288,6 +288,12 @@
       <label>Select House:</label>
       <select id="house-select"></select>
 
+      <label>Category:</label>
+      <select id="category-select" onchange="toggleCustomCategory()">
+        <option value="">-- Select a Category --</option>
+        <option value="Other">Other (Type below...)</option>
+      </select>
+
       <label>Event Type:</label>
       <select id="event-type-select" onchange="updateRankingDropdown()">
         <option value="">-- Select Event Type --</option>
@@ -300,11 +306,6 @@
         <option value="">-- Select Event Type First --</option>
       </select>
 
-      <label>Category:</label>
-      <select id="category-select" onchange="toggleCustomCategory()">
-        <option value="">-- Select a Category --</option>
-        <option value="Other">Other (Type below...)</option>
-      </select>
 
       <div id="custom-category-container" class="hidden">
         <label>Enter Custom Category:</label>
