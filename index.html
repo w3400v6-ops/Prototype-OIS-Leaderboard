@@ -335,12 +335,11 @@
   </a>
 
   <!-- Firebase v9 compat -->
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
-    import { initializeAppCheck, ReCaptchaV3Provider } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app-check.js";
-    import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-database.js";
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 
-    // 1. Your Firebase configuration
+  <script>
+    // Firebase config - replace with your project info
     const firebaseConfig = {
       apiKey: "AIzaSyBIIEQt0ryHNulKYNmfCliMywmSzzQuBls",
       authDomain: "my-epic-database.firebaseapp.com",
@@ -352,17 +351,9 @@
       measurementId: "G-QCK28GGW59"
     };
 
-    // 2. Initialize Firebase
-    const app = initializeApp(firebaseConfig);
-
-    // 3. INITIALIZE APP CHECK
-    // Replace 'YOUR_RECAPTCHA_SITE_KEY' with the key from Google reCAPTCHA Admin
-    const appCheck = initializeAppCheck(app, {
-      provider: new ReCaptchaV3Provider('6LdKIWUsAAAAAMSQiBISR4Gcca8WrQi0F75QINHl'),
-      isTokenAutoRefreshEnabled: true
-    });
-
-    const db = getDatabase(app);
+    // Initialize Firebase
+    const app = firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
 
     console.log("Firebase initialized"); // test
     console.log("DB object:", db); // test
