@@ -81,8 +81,41 @@
 
     .house .info { flex-grow: 1; }
     .house .name { font-weight: bold; margin-left: 15px; font-size: 1.1em; }
-    .house .score { font-weight: bold; color: #0077ff; font-size: 1.2em; }
-    .house.leader { background: #e0f7ff; }
+    .house .score { font-weight: bold; font-size: 1.2em; }
+    
+    .leader {
+      transform: scale(1.02);
+    }
+
+       /* Specific glows based on house color */
+    .house[data-house="red"].leader {
+      background: #fff5f5 !important;
+      border: 2px solid #ff4d4d;
+      box-shadow: 0 10px 25px rgba(255, 77, 77, 0.2);
+    }
+    
+    .house[data-house="blue"].leader {
+      background: #f0f7ff !important;
+      border: 2px solid #0077ff;
+      box-shadow: 0 10px 25px rgba(0, 119, 255, 0.2);
+    }
+    
+    .house[data-house="green"].leader {
+      background: #f2fff5 !important;
+      border: 2px solid #2ecc71;
+      box-shadow: 0 10px 25px rgba(46, 204, 113, 0.2);
+    }
+    
+    .house[data-house="yellow"].leader {
+      background: #fffdf0 !important;
+      border: 2px solid #f1c40f;
+      box-shadow: 0 10px 25px rgba(241, 196, 15, 0.2);
+    }
+    
+    /* Match the score text color to the house border when leading */
+    .house.leader .score {
+      color: inherit; /* Takes the color from the card's border/text logic */
+    }
 
     textarea  
     {  
@@ -752,3 +785,4 @@
   </script>
 </body>
 </html>
+
