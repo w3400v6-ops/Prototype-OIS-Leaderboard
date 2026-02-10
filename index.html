@@ -70,7 +70,6 @@
     .house .score {
       font-size: 1.5em;
       font-weight: bold;
-      color: #0077ff;
       width: 60px;
       text-align: right;
     }
@@ -94,8 +93,37 @@
     }
 
     .leader {
-      background: #e0f7ff;
       transform: scale(1.05);
+    }
+
+       /* Specific glows based on house color */
+    .house[data-house="red"].leader {
+      background: #fff5f5 !important;
+      border: 2px solid #ff4d4d;
+      box-shadow: 0 10px 25px rgba(255, 77, 77, 0.2);
+    }
+    
+    .house[data-house="blue"].leader {
+      background: #f0f7ff !important;
+      border: 2px solid #0077ff;
+      box-shadow: 0 10px 25px rgba(0, 119, 255, 0.2);
+    }
+    
+    .house[data-house="green"].leader {
+      background: #f2fff5 !important;
+      border: 2px solid #2ecc71;
+      box-shadow: 0 10px 25px rgba(46, 204, 113, 0.2);
+    }
+    
+    .house[data-house="yellow"].leader {
+      background: #fffdf0 !important;
+      border: 2px solid #f1c40f;
+      box-shadow: 0 10px 25px rgba(241, 196, 15, 0.2);
+    }
+    
+    /* Match the score text color to the house border when leading */
+    .house.leader .score {
+      color: inherit; /* Takes the color from the card's border/text logic */
     }
 
     /* The Crown Icon itself (hidden by default) */
@@ -538,6 +566,7 @@
 
 </body>
 </html>
+
 
 
 
