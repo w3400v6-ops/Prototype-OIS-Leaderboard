@@ -58,7 +58,6 @@
 
     button { background: #0077ff; color: white; border: none; cursor: pointer; font-weight: bold; transition: 0.3s; }
     button:hover { background: #005ecb; }
-    .logout-btn { background: #666; margin-top: 10px; }
 
     .hidden { display: none; }
 
@@ -82,7 +81,6 @@
     .house .info { flex-grow: 1; }
     .house .name { font-weight: bold; margin-left: 15px; font-size: 1.1em; }
     .house .score { font-weight: bold; font-size: 1.2em; }
-    
     .leader {
       transform: scale(1.02);
     }
@@ -272,44 +270,38 @@
   
   </style>
 </head>
-<body class="loading"> <a href="index.html" class="back-btn"><span>←</span> Back</a>
+<body class="loading"> 
+  <a href="index.html" class="back-btn"><span>←</span> Back</a>
 
   <div class="container">
-    <div id="login-section">
-      <h2>Admin Login</h2>
-      <input type="email" id="email" placeholder="Email">
-      <input type="password" id="password" placeholder="Password">
-      <button onclick="login()">Login</button>
+    <div id="unauthorized-section" class="hidden" style="text-align: center; margin-top: 100px;">
+      <h1 style="font-size: 4em;">🚫</h1>
+      <h2>Oh ouh, you are not suppose to be here!</h2>
+      <p>This page is restricted to OIS Administrators only.</p>
+      <a href="index.html" style="color: #0077ff; font-weight: bold;">Return to Home</a>
     </div>
 
     <div id="admin-section" class="hidden">
       <h3>Current Live Scores</h3>
       <div class="leaderboard" id="admin-leaderboard">
         <div class="house" data-house="red" id="red">
-          <div class="skeleton skeleton-img"></div> <div class="info">
-            <p class="name"><span class="skeleton skeleton-name"></span></p>
-          </div>
+          <div class="skeleton skeleton-img"></div> 
+          <div class="info"><p class="name"><span class="skeleton skeleton-name"></span></p></div>
           <div class="score"><span class="skeleton skeleton-score"></span></div>
         </div>
-
-        <div class="house" data-house="blue"  id="blue">
-          <div class="skeleton skeleton-img"></div> <div class="info">
-            <p class="name"><span class="skeleton skeleton-name"></span></p>
-          </div>
+        <div class="house" data-house="blue" id="blue">
+          <div class="skeleton skeleton-img"></div>
+          <div class="info"><p class="name"><span class="skeleton skeleton-name"></span></p></div>
           <div class="score"><span class="skeleton skeleton-score"></span></div>
         </div>
-
-        <div class="house" data-house="green"  id="green">
-          <div class="skeleton skeleton-img"></div> <div class="info">
-            <p class="name"><span class="skeleton skeleton-name"></span></p>
-          </div>
+        <div class="house" data-house="green" id="green">
+          <div class="skeleton skeleton-img"></div>
+          <div class="info"><p class="name"><span class="skeleton skeleton-name"></span></p></div>
           <div class="score"><span class="skeleton skeleton-score"></span></div>
         </div>
-
-        <div class="house" data-house="yellow"  id="yellow">
-          <div class="skeleton skeleton-img"></div> <div class="info">
-            <p class="name"><span class="skeleton skeleton-name"></span></p>
-          </div>
+        <div class="house" data-house="yellow" id="yellow">
+          <div class="skeleton skeleton-img"></div>
+          <div class="info"><p class="name"><span class="skeleton skeleton-name"></span></p></div>
           <div class="score"><span class="skeleton skeleton-score"></span></div>
         </div>
       </div>
@@ -317,7 +309,6 @@
       <hr>
 
       <h3>Update House Scores</h3>
-      
       <label>Select House:</label>
       <select id="house-select"></select>
 
@@ -348,7 +339,6 @@
       <textarea id="comment" placeholder="Add details here..."></textarea>
 
       <button onclick="updateScore()">Submit Update</button>
-      <button onclick="logout()" class="logout-btn">Logout</button>
 
       <hr>
       <h3>Recent Activity</h3>
@@ -375,7 +365,8 @@
             <tr>
               <th>Deleted At</th>
               <th>Record</th>
-              <th>Action</th> </tr>
+              <th>Action</th> 
+            </tr>
           </thead>
           <tbody id="recycle-body"></tbody>
         </table>
@@ -407,25 +398,43 @@
 
     let eventTypeData = {}; // Global variable to store points from DB
 
-    function login() {
-      const email = document.getElementById('email').value;
-      const pass = document.getElementById('password').value;
-      auth.signInWithEmailAndPassword(email, pass).catch(err => alert("Login Failed."));
-    }
-    
-    function logout() { auth.signOut().then(() => location.reload()); }
+    auth.onAuthStateChanged(async (user) => {
+    const adminSection = document.getElementById('admin-section');
+    const unauthorizedSection = document.getElementById('unauthorized-section');
 
-    auth.onAuthStateChanged(user => {
-      if (user) {
-        document.getElementById('login-section').classList.add('hidden');
-        document.getElementById('admin-section').classList.remove('hidden');
-        fetchInitialData();
-        startLeaderboardListener();
-        startIdleTracking();
-        startLogsListener();
-        startRecycleBinListener();
-      }
-    });
+    if (user && user.email.endsWith('@oakbridge.edu.my')) {
+      // 1. Sanitize the email for Firebase key (dots to commas)
+      const emailKey = user.email.toLowerCase().split('.').join(',');
+      
+      // 2. Check the AdminEmail list in the DB
+      db.ref(`AdminEmails/${emailKey}`).once('value', snapshot => {
+        if (snapshot.exists()) {
+          // SUCCESS: User is an authorized admin
+          unauthorizedSection.classList.add('hidden');
+          adminSection.classList.remove('hidden');
+          
+          // Start all your listeners
+          fetchInitialData();
+          startLeaderboardListener();
+          startIdleTracking();
+          startLogsListener();
+          startRecycleBinListener();
+        } else {
+          // FAIL: Logged in with school email, but NOT an admin
+          showUnauthorized();
+        }
+      });
+    } else {
+      // FAIL: Not logged in or wrong domain
+      showUnauthorized();
+    }
+  });
+
+  function showUnauthorized() {
+    document.body.classList.remove('loading');
+    document.getElementById('admin-section').classList.add('hidden');
+    document.getElementById('unauthorized-section').classList.remove('hidden');
+  }
 
     // 1. Handle showing/hiding the "Other" text box
     function toggleCustomCategory() {
@@ -642,7 +651,9 @@
           
           // Column 1: Time
           const timeCell = row.insertCell(0);
-          timeCell.innerHTML = `<span style="white-space: nowrap;">${log.fullDateTime}</span>`;
+          const AddedAt = new Date(log.unixTimestamp).toLocaleString([], {year:"numeric", month:'numeric', day:'numeric', hour:'2-digit', minute:'2-digit'});
+          timeCell.innerHTML = `${AddedAt}`;
+
 
           // Column 2: Description
           const descCell = row.insertCell(1);
@@ -785,4 +796,3 @@
   </script>
 </body>
 </html>
-
