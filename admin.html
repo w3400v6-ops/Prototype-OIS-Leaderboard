@@ -729,6 +729,14 @@
 
     function deleteLog(logId, logData) {
       console.log(logId);
+
+      const currentUserEmail = auth.currentUser.email;
+
+      if (logData.adminEmail !== currentUserEmail) {
+        alert(`Permission Denied: Only ${logData.adminEmail} can delete this log.`);
+        return; // Stop the function here
+      }
+
       const confirmation = confirm(`Are you sure you want to delete this log? This will remove ${logData.pointsAdded} points from ${logData.houseName}.`);
       
       if (!confirmation) return;
@@ -807,6 +815,14 @@
 
     function restoreLog(recycleId, itemData) {
       console.log(recycleId);
+
+      const currentUserEmail = auth.currentUser.email;
+
+      if (itemData.adminEmail !== currentUserEmail) {
+        alert(`Permission Denied: Only ${itemData.adminEmail}) can restore this.`);
+        return;
+      }
+
       const confirmation = confirm(`Restore this log? This will restore ${itemData.pointsAdded} points to ${itemData.houseName}.`);
       if (!confirmation) return;
 
