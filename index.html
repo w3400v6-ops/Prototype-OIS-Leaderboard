@@ -93,7 +93,7 @@
     }
 
     .leader {
-      transform: scale(1.05);
+      transform: scale(1.02);
     }
 
        /* Specific glows based on house color */
@@ -287,7 +287,37 @@
     }
 
     .leader {
-      transform: scale(1.02); /* smaller zoom for mobile */
+      transform: scale(1.02);
+    }
+
+       /* Specific glows based on house color */
+    .house[data-house="red"].leader {
+      background: #fff5f5 !important;
+      border: 2px solid #ff4d4d;
+      box-shadow: 0 10px 25px rgba(255, 77, 77, 0.2);
+    }
+    
+    .house[data-house="blue"].leader {
+      background: #f0f7ff !important;
+      border: 2px solid #0077ff;
+      box-shadow: 0 10px 25px rgba(0, 119, 255, 0.2);
+    }
+    
+    .house[data-house="green"].leader {
+      background: #f2fff5 !important;
+      border: 2px solid #2ecc71;
+      box-shadow: 0 10px 25px rgba(46, 204, 113, 0.2);
+    }
+    
+    .house[data-house="yellow"].leader {
+      background: #fffdf0 !important;
+      border: 2px solid #f1c40f;
+      box-shadow: 0 10px 25px rgba(241, 196, 15, 0.2);
+    }
+    
+    /* Match the score text color to the house border when leading */
+    .house.leader .score {
+      color: inherit; /* Takes the color from the card's border/text logic */
     }
 
     .admin-login-btn {
@@ -323,6 +353,14 @@
 </head>
 <body>
 
+  <div id="auth-overlay" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(240, 244, 248, 0.95); z-index: 9999; display: flex; flex-direction: column; align-items: center; justify-content: center;">
+    <h2 style="color: #333; margin-bottom: 20px;">OIS Leaderboard</h2>
+    <button id="login-btn" style="padding: 15px 30px; font-size: 1.2em; background: #0077ff; color: white; border: none; border-radius: 10px; cursor: pointer; box-shadow: 0 4px 15px rgba(0,119,255,0.3);">
+        Sign in with School Email
+    </button>
+    <p id="error-msg" style="color: red; margin-top: 15px; display: none;">Please use your @ois.edu.my email.</p>
+  </div>
+
   <h1>OIS Leaderboard</h1>
 
   <div class="leaderboard">
@@ -355,7 +393,7 @@
     </div>
   </div>
 
-  <a href="admin.html" class="admin-login-btn" title="Admin Login">
+  <a href="admin.html" id=admin-btn class="admin-login-btn" title="Admin Login" style="display: none;">
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
     <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
     <circle cx="12" cy="7" r="4"></circle>
@@ -363,11 +401,12 @@
   </a>
 
   <!-- Firebase v9 compat -->
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+  <script type="module">
+    // 1. Import necessary Firebase modules
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
+    import { getDatabase, ref, onValue, get } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-database.js";
+    import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
 
-  <script>
-    // Firebase config - replace with your project info
     const firebaseConfig = {
       apiKey: "AIzaSyBIIEQt0ryHNulKYNmfCliMywmSzzQuBls",
       authDomain: "my-epic-database.firebaseapp.com",
@@ -375,23 +414,84 @@
       projectId: "my-epic-database",
       storageBucket: "my-epic-database.appspot.com",
       messagingSenderId: "533989527206",
-      appId: "1:533989527206:web:d34c0a693e6f19dc43ae67",
-      measurementId: "G-QCK28GGW59"
+      appId: "1:533989527206:web:d34c0a693e6f19dc43ae67"
     };
 
-    // Initialize Firebase
-    const app = firebase.initializeApp(firebaseConfig);
-    const db = firebase.database();
-
-    console.log("Firebase initialized"); // test
-    console.log("DB object:", db); // test
-
-    // House IDs
-    const houseEls = Array.from(document.querySelectorAll('.house')); // "const" is a local variable that value can't be changed and that can only be use under <script> = block-scoped
-    //quearySelector select all components in website that is ".house" decalre in the CSS and html
-    let currentData = {}; // "let" is a local variable that can only be use under <script> = block-scoped
-    let initialized = false;
+    // Initialize
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+    const auth = getAuth(app);
+    const provider = new GoogleAuthProvider();
     
+    // Forces the login picker to only show your school domain accounts
+    provider.setCustomParameters({ hd: "oakbridge.edu.my" }); // Update this to your exact school domain
+
+    const houseEls = Array.from(document.querySelectorAll('.house'));
+    let currentData = {};
+    let initialized = false;
+
+    const authOverlay = document.getElementById('auth-overlay');
+    const loginBtn = document.getElementById('login-btn');
+    const errorMsg = document.getElementById('error-msg');
+
+    // 1. Check if they are already logged in
+    onAuthStateChanged(auth, async (user) => {
+      const adminBtn = document.getElementById('admin-btn');
+      const authOverlay = document.getElementById('auth-overlay');
+
+      if (user && user.email.endsWith('@oakbridge.edu.my')) {
+            authOverlay.style.display = 'none';
+            startLeaderboard();
+
+            // 1. Sanitize email (replace . with ,) to match Firebase keys
+            const emailKey = user.email.replace(/\./g, ',');
+            const db = getDatabase();
+            
+            const adminRef = ref(db, 'AdminEmails/' + emailKey);
+            
+            console.log("Checking path:", 'AdminEmails/' + emailKey); // Check this in your console!
+
+            try {
+                const snapshot = await get(adminRef);
+                if (snapshot.exists()) {
+                    console.log("Database found admin record!");
+                    adminBtn.style.display = "flex";
+                } else {
+                    console.log("No admin record found at that path.");
+                    adminBtn.style.display = "none";
+                }
+            } catch (error) {
+                console.error("Firebase rejected the request:", error);
+            }
+
+        } else {
+            authOverlay.style.display = 'flex';
+            adminBtn.style.display = "none";
+            if (user) {
+                alert("Access Denied: Please use your @oakbridge.edu.my account.");
+                auth.signOut();
+            }
+        }
+    });
+
+    // 2. Handle the Button Click (Browsers allow popups here!)
+    loginBtn.addEventListener('click', () => {
+      signInWithPopup(auth, provider)
+        .then((result) => {
+          if (!result.user.email.endsWith('@oakbridge.edu.my')) {
+            errorMsg.style.display = 'block';
+            auth.signOut();
+          }
+        })
+        .catch((error) => {
+          if (error.code === 'auth/popup-blocked') {
+            alert("Please enable popups for this website to sign in.");
+          }
+          console.error("Auth Error:", error);
+          alert("Error Code: " + error.code + "\nMessage: " + error.message);
+        });
+    });
+        
 
     // 🔢 Score animation
     function animateScore(el, from, to, done){
@@ -463,110 +563,114 @@
       });
     }
 
-    // 🔥 Firebase realtime listener
-    db.ref('Houses').on('value', snap => {
-      const data = snap.val();
-      if(!data) return;
+    function startLeaderboard(){
+      // 🔥 Firebase realtime listener
+      const housesRef = ref(db, 'Houses'); 
 
-      // 🟡 FIRST LOAD
-      if(!initialized){
+      // Instead of .on('value', ...), use the onValue() function:
+      onValue(housesRef, (snap) => {
+        const data = snap.val();
+        if(!data) return;
+
+        // 🟡 FIRST LOAD
+        if(!initialized){
+          houseEls.forEach(el => {
+            const key = el.dataset.house;
+            const scoreEl = el.querySelector('.score');
+            const nameEl = el.querySelector('.name');
+
+            // 1. Re-insert the real image (replaces the skeleton-img div)
+            // Adjust the path to your local image files
+            const imgMap = {
+              red: 'icons8-red-panda-100.png',
+              blue: 'icons8-animal-100.png',
+              green: 'icons8-green-64.png',
+              yellow: 'icons8-bee-top-view-100.png'
+            };
+            
+            // 1. Set names and scores immediately after loading
+            el.innerHTML = `
+              <img src="${imgMap[key]}" alt="${data[key].name}">
+              <div class="info"><p class="name">${data[key].name}</p></div>
+              <div class="score">${data[key].score}</div>
+            `;
+
+            currentData[key] = data[key].score;
+          });
+
+          // 2. Sort them by score immediately
+          const sorted = [...houseEls].sort(
+            (a,b) => data[b.dataset.house].score - data[a.dataset.house].score
+          );
+
+          // 3. Apply the order right now
+          sorted.forEach((el, i) => {
+            el.style.order = i;
+          });
+
+          // 4. Mark the leader (optional)
+          sorted[0].classList.add('leader');
+
+          initialized = true; // Setup is done!
+          return; // Stop here so we don't trigger the "Live Update" logic below
+        }
+
+        // 🟢 LIVE UPDATES
+        let needsReorder = false;
+        let activeHouseEl = null;
+
         houseEls.forEach(el => {
           const key = el.dataset.house;
           const scoreEl = el.querySelector('.score');
-          const nameEl = el.querySelector('.name');
+          const newScore = data[key].score;
+          const oldScore = currentData[key];
 
-          // 1. Re-insert the real image (replaces the skeleton-img div)
-          // Adjust the path to your local image files
-          const imgMap = {
-            red: 'icons8-red-panda-100.png',
-            blue: 'icons8-animal-100.png',
-            green: 'icons8-green-64.png',
-            yellow: 'icons8-bee-top-view-100.png'
-          };
-          
-          // 1. Set names and scores immediately after loading
-          el.innerHTML = `
-            <img src="${imgMap[key]}" alt="${data[key].name}">
-            <div class="info"><p class="name">${data[key].name}</p></div>
-            <div class="score">${data[key].score}</div>
-          `;
+          if (oldScore !== newScore) {
+            needsReorder = true;
+            activeHouseEl = el; // Track which card is actually changing
 
-          currentData[key] = data[key].score;
+            // 1. Lift the card immediately
+            el.classList.add('updating');
+
+            // 2. Animate the numbers
+            animateScore(
+              scoreEl,
+              oldScore,
+              newScore,
+              () => {
+                // Optional: do something when counting finishes
+              }
+            );
+
+            currentData[key] = newScore;
+          }
         });
 
-        // 2. Sort them by score immediately
-        const sorted = [...houseEls].sort(
-          (a,b) => data[b.dataset.house].score - data[a.dataset.house].score
-        );
+        if (needsReorder) {
+          // 3. Small delay so the "lift" happens before the "slide"
+          setTimeout(() => {
+            const sorted = [...houseEls].sort(
+              (a, b) => data[b.dataset.house].score - data[a.dataset.house].score
+            );
+            
+            // This triggers the FLIP animation you already have
+            animateCards(sorted);
 
-        // 3. Apply the order right now
-        sorted.forEach((el, i) => {
-          el.style.order = i;
-        });
-
-        // 4. Mark the leader (optional)
-        sorted[0].classList.add('leader');
-
-        initialized = true; // Setup is done!
-        return; // Stop here so we don't trigger the "Live Update" logic below
-      }
-
-      // 🟢 LIVE UPDATES
-      let needsReorder = false;
-      let activeHouseEl = null;
-
-      houseEls.forEach(el => {
-        const key = el.dataset.house;
-        const scoreEl = el.querySelector('.score');
-        const newScore = data[key].score;
-        const oldScore = currentData[key];
-
-        if (oldScore !== newScore) {
-          needsReorder = true;
-          activeHouseEl = el; // Track which card is actually changing
-
-          // 1. Lift the card immediately
-          el.classList.add('updating');
-
-          // 2. Animate the numbers
-          animateScore(
-            scoreEl,
-            oldScore,
-            newScore,
-            () => {
-              // Optional: do something when counting finishes
-            }
-          );
-
-          currentData[key] = newScore;
+            // 4. After the movement finishes (600ms is our CSS transition time)
+            // Remove the "lifted" state
+            setTimeout(() => {
+              if (activeHouseEl) {
+                activeHouseEl.classList.remove('updating');
+              }
+            }, 600);
+          }, 100); 
         }
       });
-
-      if (needsReorder) {
-        // 3. Small delay so the "lift" happens before the "slide"
-        setTimeout(() => {
-          const sorted = [...houseEls].sort(
-            (a, b) => data[b.dataset.house].score - data[a.dataset.house].score
-          );
-          
-          // This triggers the FLIP animation you already have
-          animateCards(sorted);
-
-          // 4. After the movement finishes (600ms is our CSS transition time)
-          // Remove the "lifted" state
-          setTimeout(() => {
-            if (activeHouseEl) {
-              activeHouseEl.classList.remove('updating');
-            }
-          }, 600);
-        }, 100); 
-      }
-    });
+    }
   </script>
 
 </body>
 </html>
-
 
 
 
