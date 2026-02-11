@@ -59,7 +59,7 @@
     button { background: #0077ff; color: white; border: none; cursor: pointer; font-weight: bold; transition: 0.3s; }
     button:hover { background: #005ecb; }
 
-    .hidden { display: none; }
+    .hidden {display: none !important;}
 
     /* Leaderboard Mini-View */
     .leaderboard { margin-bottom: 30px; display: flex; flex-direction: column; gap: 10px; }
@@ -267,21 +267,64 @@
       justify-content: flex-end;
     }
 
+    /* Full screen loading overlay */
+    #loading-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(240, 244, 248, 0.9); /* Matches your body background */
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      z-index: 9999;
+    }
+
+    /* The actual spinning circle */
+    .spinner {
+      width: 50px;
+      height: 50px;
+      border: 5px solid #ddd;
+      border-top: 5px solid #0077ff;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    .loading-text {
+      margin-top: 15px;
+      font-family: Arial, sans-serif;
+      color: #333;
+      font-weight: bold;
+    }
+
   
   </style>
 </head>
 <body class="loading"> 
   <a href="index.html" class="back-btn"><span>←</span> Back</a>
 
-  <div class="container">
-    <div id="unauthorized-section" class="hidden" style="text-align: center; margin-top: 100px;">
-      <h1 style="font-size: 4em;">🚫</h1>
-      <h2>Oh ouh, you are not suppose to be here!</h2>
-      <p>This page is restricted to OIS Administrators only.</p>
-      <a href="index.html" style="color: #0077ff; font-weight: bold;">Return to Home</a>
-    </div>
+  <div id="loading-overlay">
+    <div class="spinner"></div>
+    <p class="loading-text">Verifying Credentials...</p>
+  </div>
+  
+  <div id="unauthorized-section" class="hidden" style="text-align: center; margin-top: 100px;">
+    <h1 style="font-size: 4em;">🚫</h1>
+    <h2>Oh ouh, you are not suppose to be here!</h2>
+    <p>This page is restricted to OIS Administrators only.</p>
+    <a href="index.html" style="color: #0077ff; font-weight: bold;">Return to Home</a>
+  </div>
 
-    <div id="admin-section" class="hidden">
+  
+  <div id="admin-section" class="hidden">
+    <div class="container">
       <h3>Current Live Scores</h3>
       <div class="leaderboard" id="admin-leaderboard">
         <div class="house" data-house="red" id="red">
@@ -401,6 +444,7 @@
     auth.onAuthStateChanged(async (user) => {
     const adminSection = document.getElementById('admin-section');
     const unauthorizedSection = document.getElementById('unauthorized-section');
+    const loadingOverlay = document.getElementById('loading-overlay');
 
     if (user && user.email.endsWith('@oakbridge.edu.my')) {
       // 1. Sanitize the email for Firebase key (dots to commas)
@@ -412,6 +456,7 @@
           // SUCCESS: User is an authorized admin
           unauthorizedSection.classList.add('hidden');
           adminSection.classList.remove('hidden');
+          loadingOverlay.classList.add('hidden');
           
           // Start all your listeners
           fetchInitialData();
@@ -432,6 +477,7 @@
 
   function showUnauthorized() {
     document.body.classList.remove('loading');
+    document.getElementById('loading-overlay').classList.add('hidden');
     document.getElementById('admin-section').classList.add('hidden');
     document.getElementById('unauthorized-section').classList.remove('hidden');
   }
@@ -440,6 +486,7 @@
     function toggleCustomCategory() {
       const select = document.getElementById('category-select');
       const customContainer = document.getElementById('custom-category-container');
+      
       
       if (select.value === "Other") {
         customContainer.classList.remove('hidden');
