@@ -56,6 +56,15 @@
       font-size: 1em;
     }
 
+    .user-info-bar {
+      text-align: left;
+      font-size: 0.85em;
+      color: #666;
+      margin-bottom: 10px;
+      font-style: italic;
+    }
+
+
     button { background: #0077ff; color: white; border: none; cursor: pointer; font-weight: bold; transition: 0.3s; }
     button:hover { background: #005ecb; }
 
@@ -230,7 +239,7 @@
       margin-top: 50px;
       background: #fdf2f2;
       border: 1px solid #fecaca;
-      padding: 20px;
+      padding: 10px;
       border-radius: 12px;
     }
 
@@ -325,6 +334,9 @@
   
   <div id="admin-section" class="hidden">
     <div class="container">
+      <div class="user-info-bar">
+        Admin: <span id ="admin-email-display"></span>
+      </div>
       <h3>Current Live Scores</h3>
       <div class="leaderboard" id="admin-leaderboard">
         <div class="house" data-house="red" id="red">
@@ -457,7 +469,8 @@
           unauthorizedSection.classList.add('hidden');
           adminSection.classList.remove('hidden');
           loadingOverlay.classList.add('hidden');
-          
+          document.getElementById('admin-email-display').innerText = user.email;
+
           // Start all your listeners
           fetchInitialData();
           startLeaderboardListener();
@@ -859,4 +872,3 @@
   </script>
 </body>
 </html>
-
