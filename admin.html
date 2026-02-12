@@ -819,7 +819,7 @@
       const currentUserEmail = auth.currentUser.email;
 
       if (itemData.adminEmail !== currentUserEmail) {
-        alert(`Permission Denied: Only ${itemData.adminEmail}) can restore this.`);
+        alert(`Permission Denied: Only ${itemData.adminEmail} can restore this.`);
         return;
       }
 
@@ -859,3 +859,4 @@
   </script>
 </body>
 </html>
+
