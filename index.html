@@ -36,8 +36,7 @@
 
     .house {
       display: flex;
-      align-items: center;
-      padding: 20px;
+      flex-direction: column;
       background: #fff;
       border-radius: 20px;
       box-shadow: 0 4px 10px rgba(0,0,0,0.1);
@@ -72,6 +71,7 @@
       font-weight: bold;
       width: 60px;
       text-align: right;
+      color: #222;
     }
 
     .house.updating {
@@ -120,35 +120,77 @@
       border: 2px solid #f1c40f;
       box-shadow: 0 10px 25px rgba(241, 196, 15, 0.2);
     }
+
+    .house:hover{
+      transform: scale(1.05);
+    }
+
+    .card-header {
+      display: flex;
+      align-items: center;
+      padding: 20px; /* Moves the padding from .house to here */
+      width: 100%;
+      box-sizing: border-box;
+    }
+
+    /* The Expandable Drawer */
+    .details-drawer {
+      display: grid;
+      grid-template-rows: 0fr; /* Closed by default */
+      transition: grid-template-rows 0.4s ease-out;
+      background: #fcfcfc00;
+    }
+
+    .house.expanded .details-drawer {
+      grid-template-rows: 1fr; /* Open */
+    }
+
+    .details-content {
+      overflow: hidden;
+      border-top: 1px solid #eee;
+    }
+
+    .log-list {
+      padding: 0px 20px;
+    }
+
+    .log-item {
+      display: flex;
+      justify-content: space-between; /* Pushes reason left and points right */
+      align-items: center;
+      padding: 12px 0;
+      border-bottom: 1px solid #f0f0f0;
+    }
+
+    .log-reason {
+      font-size: 0.95em;
+      color: #444;
+      line-height: 1.4;
+      max-width: 70%; /* Prevents text from hitting the points */
+    }
+
+    .log-points {
+      font-weight: bold;
+      color: #2ecc71; /* Green for points added */
+      font-size: 1.1em;
+    }
+
+    .log-points.negative {
+      color: #e74c3c; /* Red if points were ever subtracted */
+    }
+
+    .log-item:last-child { border-bottom: none; }
+
+    .no-points {
+      padding: 20px;
+      text-align: center;
+      color: #999;
+      font-style: italic;
+    }
     
     /* Match the score text color to the house border when leading */
     .house.leader .score {
       color: inherit; /* Takes the color from the card's border/text logic */
-    }
-
-    /* The Crown Icon itself (hidden by default) */
-    .crown-icon {
-      position: absolute;
-      top: -30px; /* Adjust to move up/down */
-      left: -18px; /* Adjust to move left/right */
-      width: 45px;
-      height: 45px;
-      z-index: 20; /* Sit on top of everything */
-      transform: rotate(-25deg); /* Tilt left */
-      opacity: 0; /* Hidden by default */
-      transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); /* Bouncy entry */
-      pointer-events: none; /* Let clicks pass through to the card */
-    }
-
-    /* THE TRIGGER: Make it visible only on the leader card */
-    .house.leader .crown-icon {
-      opacity: 1;
-      transform: rotate(-25deg) scale(1); /* Ensure it's full size when visible */
-    }
-
-    /* Optional: A slight pop effect when it becomes leader */
-    .house.leader.updating .crown-icon {
-      transform: rotate(-25deg) scale(1.3);
     }
 
     .admin-login-btn {
@@ -331,13 +373,6 @@
       width: 20px;
       height: 20px;
     }
-
-    .crown-icon {
-    width: 35px;
-    height: 35px;
-    top: -12px;
-    left: -12px;
-  }
   }
 
   @media (min-width: 1200px) {
@@ -365,31 +400,39 @@
 
   <div class="leaderboard">
     <div class="house" data-house="red" id="red">
-      <div class="skeleton skeleton-img"></div> <div class="info">
-        <p class="name"><span class="skeleton skeleton-name"></span></p>
+      <div class ="card-header" >
+        <div class="skeleton skeleton-img"></div> <div class="info">
+          <p class="name"><span class="skeleton skeleton-name"></span></p>
+        </div>
+        <div class="score"><span class="skeleton skeleton-score"></span></div>
       </div>
-      <div class="score"><span class="skeleton skeleton-score"></span></div>
     </div>
 
     <div class="house" data-house="blue"  id="blue">
-      <div class="skeleton skeleton-img"></div> <div class="info">
-        <p class="name"><span class="skeleton skeleton-name"></span></p>
+      <div class ="card-header" >
+        <div class="skeleton skeleton-img"></div> <div class="info">
+          <p class="name"><span class="skeleton skeleton-name"></span></p>
+        </div>
+        <div class="score"><span class="skeleton skeleton-score"></span></div>
       </div>
-      <div class="score"><span class="skeleton skeleton-score"></span></div>
     </div>
 
     <div class="house" data-house="green"  id="green">
-      <div class="skeleton skeleton-img"></div> <div class="info">
-        <p class="name"><span class="skeleton skeleton-name"></span></p>
+      <div class ="card-header" >
+        <div class="skeleton skeleton-img"></div> <div class="info">
+          <p class="name"><span class="skeleton skeleton-name"></span></p>
+        </div>
+        <div class="score"><span class="skeleton skeleton-score"></span></div>
       </div>
-      <div class="score"><span class="skeleton skeleton-score"></span></div>
     </div>
 
     <div class="house" data-house="yellow"  id="yellow">
-      <div class="skeleton skeleton-img"></div> <div class="info">
-        <p class="name"><span class="skeleton skeleton-name"></span></p>
+      <div class ="card-header" >
+        <div class="skeleton skeleton-img"></div> <div class="info">
+          <p class="name"><span class="skeleton skeleton-name"></span></p>
+        </div>
+        <div class="score"><span class="skeleton skeleton-score"></span></div>
       </div>
-      <div class="score"><span class="skeleton skeleton-score"></span></div>
     </div>
   </div>
 
@@ -428,11 +471,20 @@
 
     const houseEls = Array.from(document.querySelectorAll('.house'));
     let currentData = {};
+    let allLogs = {};
     let initialized = false;
 
     const authOverlay = document.getElementById('auth-overlay');
     const loginBtn = document.getElementById('login-btn');
     const errorMsg = document.getElementById('error-msg');
+
+    // 1. Listen for Logs globally
+    onValue(ref(db,"Logs"), (snap) => {
+      allLogs = snap.val() || {};
+      // If a house is already expanded, refresh its logs live
+      const expandedHouse = document.querySelector('.house.expanded');
+      if (expandedHouse) renderHouseLogs(expandedHouse, expandedHouse.dataset.house);
+    });
 
     // 1. Check if they are already logged in
     onAuthStateChanged(auth, async (user) => {
@@ -491,6 +543,7 @@
           alert("Error Code: " + error.code + "\nMessage: " + error.message);
         });
     });
+  
         
 
     // 🔢 Score animation
@@ -590,10 +643,30 @@
             
             // 1. Set names and scores immediately after loading
             el.innerHTML = `
-              <img src="${imgMap[key]}" alt="${data[key].name}">
-              <div class="info"><p class="name">${data[key].name}</p></div>
-              <div class="score">${data[key].score}</div>
+              <div class="card-header">
+                <img src="${imgMap[key]}" alt="${data[key].name}" style="width:60px; height:60px; margin-right:20px;">
+                <div class="info" style="flex-grow:1;">
+                  <p class="name" style="font-size:1.5em; font-weight:bold; margin:0;">${data[key].name}</p>
+                </div>
+                <div class="score" style="font-size:1.5em; font-weight:bold; ">${data[key].score}</div>
+              </div>
+              
+              <div class="details-drawer">
+                <div class="details-content">
+                  <div class="log-container"></div>
+                </div>
+              </div>
             `;
+
+            // Click to Expand Logic
+            el.addEventListener('click', () => {
+              const isExpanded = el.classList.contains('expanded');
+              houseEls.forEach(h => h.classList.remove('expanded'));
+              if (!isExpanded) {
+                el.classList.add('expanded');
+                renderHouseLogs(el, key);
+              }
+            });
 
             currentData[key] = data[key].score;
           });
@@ -645,6 +718,7 @@
             currentData[key] = newScore;
           }
         });
+        
 
         if (needsReorder) {
           // 3. Small delay so the "lift" happens before the "slide"
@@ -667,11 +741,37 @@
         }
       });
     }
+
+    function renderHouseLogs(el, houseId) {
+      const container = el.querySelector('.log-container');
+  
+      // 1. Get the logs and filter by houseId
+      const filteredLogs = Object.values(allLogs).filter(log => log.houseId === houseId);
+
+      if (filteredLogs.length === 0) {
+        container.innerHTML = `<div style="padding:20px; color:#999; text-align:center; font-style:italic;">No points earned yet.</div>`;
+        return;
+      }
+
+      // 2. REVERSE the array so the most recent log is first
+      const reversedLogs = [...filteredLogs].reverse();
+
+      // 3. Map the reversed list to HTML
+      container.innerHTML = reversedLogs.map(log => `
+        <div class="log-item" style="display: flex; justify-content: space-between; padding: 12px 20px; border-bottom: 1px solid #f0f0f0;">
+          <div style="text-align: left; font-size: 0.95em; color: #444;">
+            Wins <strong>${log.rankText || 'Entry'}</strong> in <strong>${log.category || 'Event'}</strong>
+          </div>
+          <div style="text-align: right; font-weight: bold; color: #2ecc71; font-size: 1.1em;">
+            +${log.pointsAdded}
+          </div>
+        </div>
+      `).join('');
+    }
   </script>
 
 </body>
 </html>
-
 
 
 
