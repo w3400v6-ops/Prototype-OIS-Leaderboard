@@ -158,7 +158,7 @@
       display: flex;
       justify-content: space-between; /* Pushes reason left and points right */
       align-items: center;
-      padding: 12px 0;
+      padding: 12px 20px;
       border-bottom: 1px solid #f0f0f0;
     }
 
@@ -291,6 +291,101 @@
     #logs-table td:last-child {
       text-align: right;
     }
+        
+* {
+    -webkit-tap-highlight-color: transparent;
+  }
+    /* 📱 Mobile optimization */
+  @media (max-width: 600px) {
+
+    h1 {
+      font-size: 2em;
+      margin: 25px 0 15px;
+    }
+
+    .leaderboard {
+      width: 95%;
+      gap: 12px;
+    }
+
+    .house {
+      border-radius: 16px;
+    }
+
+    .house img {
+      width: 45px;
+      height: 45px;
+      margin-right: 12px;
+    }
+
+    .house .name {
+      font-size: 1.2em;
+    }
+
+    .house .score {
+      font-size: 1.2em;
+      width: 50px;
+    }
+
+    .leader {
+      transform: scale(1.02);
+    }
+
+       /* Specific glows based on house color */
+    .house[data-house="red"].leader {
+      background: #fff5f5 !important;
+      border: 2px solid #ff4d4d;
+      box-shadow: 0 10px 25px rgba(255, 77, 77, 0.2);
+    }
+    
+    .house[data-house="blue"].leader {
+      background: #f0f7ff !important;
+      border: 2px solid #0077ff;
+      box-shadow: 0 10px 25px rgba(0, 119, 255, 0.2);
+    }
+    
+    .house[data-house="green"].leader {
+      background: #f2fff5 !important;
+      border: 2px solid #2ecc71;
+      box-shadow: 0 10px 25px rgba(46, 204, 113, 0.2);
+    }
+    
+    .house[data-house="yellow"].leader {
+      background: #fffdf0 !important;
+      border: 2px solid #f1c40f;
+      box-shadow: 0 10px 25px rgba(241, 196, 15, 0.2);
+    }
+    
+    /* Match the score text color to the house border when leading */
+    .house.leader .score {
+      color: inherit; /* Takes the color from the card's border/text logic */
+    }
+
+    .admin-login-btn {
+      width: 40px;
+      height: 40px;
+      top: 15px;
+      right: 15px;
+    }
+
+    .admin-login-btn svg {
+      width: 20px;
+      height: 20px;
+    }
+    
+    .log-list {
+      padding: 0px 20px;
+    }
+
+     .log-reason {
+      font-size: 0.85em;
+    }
+
+    .log-points {
+      font-size: 0.95em;
+    }
+  }
+
 
   </style>
 </head>
@@ -552,11 +647,11 @@
             // 1. Set names and scores immediately after loading
             el.innerHTML = `
               <div class="card-header">
-                <img src="${imgMap[key]}" alt="${data[key].name}" style="width:60px; height:60px; margin-right:20px;">
+                <img src="${imgMap[key]}" alt="${data[key].name}">
                 <div class="info" style="flex-grow:1;">
-                  <p class="name" style="font-size:1.5em; font-weight:bold; margin:0;">${data[key].name}</p>
+                  <p class="name">${data[key].name}</p>
                 </div>
-                <div class="score" style="font-size:1.5em; font-weight:bold; ">${data[key].score}</div>
+                <div class="score">${data[key].score}</div>
               </div>
               
               <div class="details-drawer">
@@ -666,11 +761,11 @@
 
       // 3. Map the reversed list to HTML
       container.innerHTML = reversedLogs.map(log => `
-        <div class="log-item" style="display: flex; justify-content: space-between; padding: 12px 20px; border-bottom: 1px solid #f0f0f0;">
-          <div style="text-align: left; font-size: 0.95em; color: #444;">
+        <div class="log-item">
+          <div class="log-reason">
             Wins <strong>${log.rankText || 'Entry'}</strong> in <strong>${log.category || 'Event'}</strong>
           </div>
-          <div style="text-align: right; font-weight: bold; color: #2ecc71; font-size: 1.1em;">
+          <div class="log-points">
             +${log.pointsAdded}
           </div>
         </div>
