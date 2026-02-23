@@ -37,7 +37,7 @@
       padding: 30px;
       border-radius: 20px;
       box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-      width: 100%;
+      width: 90%;
       max-width: 500px;
       margin-top: 60px;
     }
@@ -368,8 +368,9 @@
       <select id="house-select"></select>
 
       <label>Category:</label>
-      <select id="category-select" onchange="toggleCustomCategory()">
+      <select id="category-select" onchange="handleCategoryChange()">
         <option value="">-- Select a Category --</option>
+        <option value="Bad Behaviour">Bad Behaviour (Deduction)</option>
         <option value="Other">Other (Type below...)</option>
       </select>
 
@@ -378,17 +379,26 @@
         <input type="text" id="custom-category-input" placeholder="e.g., House Logo Design">
       </div>
 
-      <label>Event Type:</label>
-      <select id="event-type-select" onchange="updateRankingDropdown()">
-        <option value="">-- Select Event Type --</option>
-        <option value="Group">Group</option>
-        <option value="Individual">Individual</option>
-      </select>
+      <div id="scoring-section"> 
+        <label>Event Type:</label>
+        <select id="event-type-select" onchange="updateRankingDropdown()">
+          <option value="">-- Select Event Type --</option>
+          <option value="Group">Group</option>
+          <option value="Individual">Individual</option>
+        </select>
+    
 
-      <label>Ranking:</label>
-      <select id="ranking-select">
-        <option value="">-- Select Event Type First --</option>
-      </select>
+        <label>Ranking:</label>
+        <select id="ranking-select">
+          <option value="">-- Select Event Type First --</option>
+        </select>
+      </div>
+
+      <div id="deduction-section" class="hidden">
+        <label style="color: #ef4444;">Points to Deduct (Enter as positive number):</label>
+        <input type="number" id="deduction-input" placeholder="e.g., 5">
+        <p style="font-size: 0.8em; color: #666; margin-top: -2px;">Note: This will subtract points from the total.</p>
+      </div>
 
       <label>Comments (Optional):</label>
       <textarea id="comment" placeholder="Add details here..."></textarea>
@@ -495,19 +505,6 @@
     document.getElementById('unauthorized-section').classList.remove('hidden');
   }
 
-    // 1. Handle showing/hiding the "Other" text box
-    function toggleCustomCategory() {
-      const select = document.getElementById('category-select');
-      const customContainer = document.getElementById('custom-category-container');
-      
-      
-      if (select.value === "Other") {
-        customContainer.classList.remove('hidden');
-      } else {
-        customContainer.classList.add('hidden');
-      }
-    }
-
     function fetchInitialData() {
       db.ref('Houses').once('value', snapshot => {
         const select = document.getElementById('house-select');
@@ -521,6 +518,7 @@
         const select = document.getElementById('category-select');
         // Clear everything except the first (Select) and last (Other)
         const otherOption = select.options[select.options.length - 1];
+        const deductionOption = select.options[select.options.length - 2];
         const placeholder = select.options[0];
         
         select.innerHTML = "";
@@ -529,13 +527,32 @@
         snapshot.forEach(child => {
           select.add(new Option(child.val(), child.val()));
         });
-        
+        select.add(deductionOption);
         select.add(otherOption);
       });
 
       db.ref('EventType').once('value', snapshot => {
         eventTypeData = snapshot.val();
       });
+    }
+
+    function handleCategoryChange() {
+      const category = document.getElementById('category-select').value;
+      const scoringSection = document.getElementById('scoring-section');
+      const deductionSection = document.getElementById('deduction-section');
+      const customContainer = document.getElementById('custom-category-container');
+
+      // 1. Handle "Other" text box
+      customContainer.classList.toggle('hidden', category !== "Other");
+
+      // 2. Handle Deduction vs Normal Scoring
+      if (category === "Bad Behaviour") {
+        scoringSection.classList.add('hidden');
+        deductionSection.classList.remove('hidden');
+      } else {
+        scoringSection.classList.remove('hidden');
+        deductionSection.classList.add('hidden');
+      }
     }
 
     function updateRankingDropdown() {
@@ -563,31 +580,36 @@
     function updateScore() {
       const houseId = document.getElementById('house-select').value;
       const houseName = document.getElementById('house-select').options[document.getElementById('house-select').selectedIndex].text;
-      const comment = document.getElementById('comment').value || "No comment provided"; // Handle empty comment
-
-      // Category Logic
       const categorySelect = document.getElementById('category-select');
+      const comment = document.getElementById('comment').value || "No comment provided"; // Handle empty comment
       let category = categorySelect.value;
+      let addedPoints = 0;
+      let rankText = "";
+      let eventType = "";
 
-      // Points are now taken from the ranking dropdown value
-      const addedPoints = parseInt(document.getElementById('ranking-select').value);
-      const eventType = document.getElementById('event-type-select').value;
+      // Logic for Bad Behaviour
+      if (category === "Bad Behaviour") {
+        const deduction = parseInt(document.getElementById('deduction-input').value);
+        if (isNaN(deduction) || deduction <= 0) return alert("Please enter a valid deduction amount.");
+        addedPoints = -deduction; // Turn into negative
+        rankText = "Penalty";
+        eventType = ""
+      } 
+      // Logic for Normal Scoring
+      else {
+        addedPoints = parseInt(document.getElementById('ranking-select').value);
+        const rankSelect = document.getElementById('ranking-select');
+        rankText = rankSelect.options[rankSelect.selectedIndex].text.split(' - ')[0];
+        eventType = document.getElementById('event-type-select').value;
 
-      const rankSelect = document.getElementById('ranking-select');
-      const rankText = rankSelect.options[rankSelect.selectedIndex].text.split(' - ')[0];
-
-      if (category === "Other") {
-        category = document.getElementById('custom-category-input').value.trim();
+        if (category === "Other") {
+          category = document.getElementById('custom-category-input').value.trim();
+        }
+        if (!eventType) return alert("Please select an Event Type.");
+        if (isNaN(addedPoints)) return alert("Please select a ranking.");
       }
 
-      // --- VALIDATIONS ---
-      if (!eventType) return alert("Please select an Event Type.");
-      if (isNaN(addedPoints)) return alert("Please select a Ranking.");
-      if (!category) return alert("Category is required.");
-
-      if (!category || category === "") {
-        return alert("Category Required: Please select a category or enter a custom one under 'Other'.");
-      }
+      if (!category || category === "") return alert("Category Required: Please select a category or enter a custom one under 'Other'.");
 
       const now = new Date();
       const fullTimestamp = `${now.toLocaleDateString()} ${now.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}`;
@@ -669,7 +691,7 @@
     let displayLimit = 5; // Start with 5
 
     function expandLogs() {
-      displayLimit = 10; // Increase to 50 (or whatever number you prefer)
+      displayLimit = 50; // Increase to 50 (or whatever number you prefer)
       startLogsListener(); // Restart the listener with the new limit
       document.getElementById('read-more-container').classList.add('hidden'); // Hide the button
     }
@@ -719,12 +741,23 @@
           const descCell = row.insertCell(1);
           //const pointText = log.pointsAdded > 0 ? `added ${log.pointsAdded}` : `removed ${Math.abs(log.pointsAdded)}`;
           const rankInfo = log.rankText ? `${log.rankText}` : "";
+
+          if (log.rankText === "Penalty")
+          {
+            descCell.innerHTML = `
+              <span class="log-house">${log.houseName}</span> loses <span class="log-house">${Math.abs(log.pointsAdded)} points </span> for receiving a
+              <span class="log-house"> ${rankInfo}</span> due to <span class="log-house">${log.category}</span>. 
+              <br><small style="color:#888;">"${log.comment}" — ${log.adminEmail}</small>
+            `;
+          }
+          else{
+            descCell.innerHTML = `
+              <span class="log-house">${log.houseName}</span> gains <span class="log-house">${Math.abs(log.pointsAdded)} points </span> for winning
+              <span class="log-house"> ${rankInfo}</span> in <span class="log-house">${log.category}</span>. 
+              <br><small style="color:#888;">"${log.comment}" — ${log.adminEmail}</small>
+            `;
+          }
           
-          descCell.innerHTML = `
-            <span class="log-house">${log.houseName}</span> added <span class="log-house">${log.pointsAdded} points </span> for winning
-            <span class="log-house"> ${rankInfo}</span> in <span class="log-house">${log.category}</span>. 
-            <br><small style="color:#888;">"${log.comment}" — ${log.adminEmail}</small>
-          `;
 
           const actionCell = row.insertCell(2);
           const btn = document.createElement('button');
@@ -802,13 +835,22 @@
           const deletedAt = new Date(item.deletedAt).toLocaleString([], {year:"numeric", month:'numeric', day:'numeric', hour:'2-digit', minute:'2-digit'});
           
           row.insertCell(0).innerHTML = `${deletedAt}`;
+
+          if (item.rankText === "Penalty"){
+             row.insertCell(1).innerHTML = `
+              <strong>${item.houseName}</strong> loses <strong>${Math.abs(item.pointsAdded)} points </strong>
+              for recieving a <strong>${item.rankText}</strong> due to <strong>${item.category}</strong>
+              <br><small> Deleted by — ${item.deletedBy}</small>
+            `;
+          }
+          else{
+            row.insertCell(1).innerHTML = `
+              <strong>${item.houseName}</strong> gains <strong>${Math.abs(item.pointsAdded)} points </strong>
+              for winning <strong>${item.rankText}</strong> in <strong>${item.category}</strong>
+              <br><small> Deleted by — ${item.deletedBy}</small>
+            `;
+          }
           
-          const actionText = item.pointsAdded > 0 ? "added" : "removed";
-          row.insertCell(1).innerHTML = `
-            <strong>${item.houseName}</strong> ${actionText} <strong>${Math.abs(item.pointsAdded)} points </strong>
-            by winning <strong>${item.rankText}</strong> in <strong>${item.category}</strong>
-            <br><small> Deleted by — ${item.deletedBy}</small>
-          `;
 
           // Restore Button Column
           const actionCell = row.insertCell(2);
