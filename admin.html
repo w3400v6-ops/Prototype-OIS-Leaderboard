@@ -724,9 +724,8 @@
     let displayLimit = 5; // Start with 5
 
     function expandLogs() {
-      displayLimit = 50; // Increase to 50 (or whatever number you prefer)
+      displayLimit += 10; // Increase to 50 (or whatever number you prefer)
       startLogsListener(); // Restart the listener with the new limit
-      document.getElementById('read-more-container').classList.add('hidden'); // Hide the button
 
       const container = document.querySelector('.logs-container');
       if (container) {
