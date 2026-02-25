@@ -36,6 +36,7 @@
 
     .house {
       display: flex;
+      overflow: hidden;
       flex-direction: column;
       background: #fff;
       border-radius: 20px;
@@ -136,6 +137,7 @@
     /* The Expandable Drawer */
     .details-drawer {
       display: grid;
+      overflow: hidden;
       grid-template-rows: 0fr; /* Closed by default */
       transition: grid-template-rows 0.4s ease-out;
       background: #fcfcfc00;
@@ -150,6 +152,7 @@
       border-top: 1px solid #eee;
     }
 
+
     .log-container {
       /* Limit the height of the logs list */
       max-height: 250px; 
@@ -162,14 +165,14 @@
       width: 6px;
     }
     .log-container::-webkit-scrollbar-track {
-      background: #f1f1f100;
+      background: #f1f1f1;
     }
     .log-container::-webkit-scrollbar-thumb {
-      background: #cccccc00;
+      background: #ccc;
       border-radius: 10px;
     }
     .log-container::-webkit-scrollbar-thumb:hover {
-      background: #99999900;
+      background: #999;
     }
 
     .log-item {
