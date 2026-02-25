@@ -150,8 +150,26 @@
       border-top: 1px solid #eee;
     }
 
-    .log-list {
-      padding: 0px 20px;
+    .log-container {
+      /* Limit the height of the logs list */
+      max-height: 250px; 
+      overflow-y: auto; /* Adds scrollbar when too many logs */
+      border-top: 1px solid #eee;
+    }
+
+    /* 🎨 Optional: Styling the scrollbar to look cleaner */
+    .log-container::-webkit-scrollbar {
+      width: 6px;
+    }
+    .log-container::-webkit-scrollbar-track {
+      background: #f1f1f100;
+    }
+    .log-container::-webkit-scrollbar-thumb {
+      background: #cccccc00;
+      border-radius: 10px;
+    }
+    .log-container::-webkit-scrollbar-thumb:hover {
+      background: #99999900;
     }
 
     .log-item {
