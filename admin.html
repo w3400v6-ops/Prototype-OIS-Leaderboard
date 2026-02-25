@@ -142,9 +142,34 @@
     }
 
     .logs-container {
-      margin-top: 20px;
-      width: 100%;
-      overflow-x: auto;
+      /* Approximately the height of 10 log items */
+      max-height: 550px; 
+      overflow-y: auto;
+      border: 1px solid #eee;
+      padding: 10px;
+      border-radius: 8px;
+      background: #fafafa;
+      
+      /* Smooth scrolling for mobile */
+      -webkit-overflow-scrolling: touch;
+    }
+
+    /* Optional: Make the scrollbar look a bit more modern */
+    .logs-container::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    .logs-container::-webkit-scrollbar-track {
+      background: #f1f1f1;
+    }
+
+    .logs-container::-webkit-scrollbar-thumb {
+      background: #ccc;
+      border-radius: 10px;
+    }
+
+    .logs-container::-webkit-scrollbar-thumb:hover {
+      background: #bbb;
     }
 
     #logs-table {
@@ -636,8 +661,16 @@
             comment: comment, 
             adminEmail: auth.currentUser.email
           });
+          
+          if (category === "Bad Behaviour") {
+            alert(`Success! deduct ${Math.abs(addedPoints)} points from ${houseName}`);
+          }
+          else
+          {
+            alert(`Success! added ${Math.abs(addedPoints)} points to ${houseName}`);
+          }
 
-          alert(`Success! Added ${addedPoints} points to ${houseName}`);
+          
 
           document.getElementById('comment').value = "";
           document.getElementById('custom-category-input').value = "";
@@ -694,6 +727,11 @@
       displayLimit = 50; // Increase to 50 (or whatever number you prefer)
       startLogsListener(); // Restart the listener with the new limit
       document.getElementById('read-more-container').classList.add('hidden'); // Hide the button
+
+      const container = document.querySelector('.logs-container');
+      if (container) {
+        container.scrollTop = 0;
+      }
     }
 
     function startLogsListener() {
