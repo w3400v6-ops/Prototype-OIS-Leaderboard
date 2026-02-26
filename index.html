@@ -158,7 +158,7 @@
       visibility: visible !important;
       flex: 1;
       max-height: 250px; 
-      overflow-y: auto; /* Adds scrollbar when too many logs */
+      overflow-y: auto; /*Adds scrollbar when too many logs */
       border-top: 1px solid #eee;
     }
 
@@ -384,6 +384,10 @@
     /* Match the score text color to the house border when leading */
     .house.leader .score {
       color: inherit; /* Takes the color from the card's border/text logic */
+    }
+
+    .house:hover{
+      transform: none;
     }
 
     .admin-login-btn {
