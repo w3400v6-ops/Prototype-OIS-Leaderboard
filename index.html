@@ -137,7 +137,6 @@
     /* The Expandable Drawer */
     .details-drawer {
       display: grid;
-      overflow: hidden;
       grid-template-rows: 0fr; /* Closed by default */
       transition: grid-template-rows 0.4s ease-out;
       background: #fcfcfc00;
@@ -148,7 +147,6 @@
     }
 
     .details-content {
-      overflow: hidden;
       border-top: 1px solid #eee;
       min-height: 0
     }
@@ -156,6 +154,8 @@
 
     .log-container {
       /* Limit the height of the logs list */
+      opacity: 1 !important;
+      visibility: visible !important;
       flex: 1;
       max-height: 250px; 
       overflow-y: auto; /* Adds scrollbar when too many logs */
@@ -685,15 +685,24 @@
                 </div>
               </div>
             `;
-            
+
             renderHouseLogs(el, key);
             // Click to Expand Logic
             el.addEventListener('click', () => {
               const isExpanded = el.classList.contains('expanded');
               houseEls.forEach(h => h.classList.remove('expanded'));
               if (!isExpanded) {
+                // 1. Ensure logs are rendered (Pre-render should have done this)
+                renderHouseLogs(el, key);
                 
-                el.classList.add('expanded');
+                // 2. FORCE REPAINT: This tells the browser "Show the text NOW"
+                // even though the height is still 0
+                el.querySelector('.details-drawer').style.display = 'grid';
+                
+                // 3. Start animation
+                requestAnimationFrame(() => {
+                  el.classList.add('expanded');
+                });
               }
             });
 
