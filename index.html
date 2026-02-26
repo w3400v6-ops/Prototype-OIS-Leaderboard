@@ -691,9 +691,10 @@
               const isExpanded = el.classList.contains('expanded');
               houseEls.forEach(h => h.classList.remove('expanded'));
               if (!isExpanded) {
-                el.classList.add('expanded');
                 renderHouseLogs(el, key);
                 void el.offsetWidth;
+                el.classList.add('expanded');
+                
               }
             });
 
