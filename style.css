@@ -1,0 +1,428 @@
+body {
+      margin: 0;
+      font-family: 'Arial', sans-serif;
+      background: #f0f4f8;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+    }
+
+    h1 {
+      margin: 40px 0 20px;
+      font-size: 3em;
+      color: #333;
+      text-align: center;
+    }
+
+    .leaderboard {
+      width: 90%;
+      max-width: 800px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      position: relative;
+      perspective: 1000px
+    }
+
+    .house {
+      display: flex;
+      overflow: hidden;
+      flex-direction: column;
+      background: #fff;
+      border-radius: 20px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+      position: relative;
+      transition: transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1), 
+              box-shadow 0.3s ease, 
+              background 0.3s ease;
+      will-change: transform;
+      
+    }
+
+    .house img {
+      width: 60px;
+      height: 60px;
+      margin-right: 20px;
+      object-fit: cover;
+    }
+
+    .house .info {
+      flex-grow: 1;
+    }
+
+    .house .name {
+      font-size: 1.5em;
+      font-weight: bold;
+      margin: 0;
+      color: #222;
+    }
+
+    .house .score {
+      font-size: 1.5em;
+      font-weight: bold;
+      width: 60px;
+      text-align: right;
+      color: #222;
+    }
+
+    .house.updating {
+      transform: scale(1.12);
+      z-index: 100;
+      transform: scale(1.08);
+      box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+      background: #fff; /* Keep background solid */
+    }
+
+    .house:not(.updating) {
+      opacity: 0.8;
+      filter: grayscale(0.2);
+      transition: all 0.6s ease;
+    }
+
+    .house.moving {
+      transition: transform 0.7s ease;
+    }
+
+    .leader {
+      transform: scale(1.02);
+    }
+
+       /* Specific glows based on house color */
+    .house[data-house="red"].leader {
+      background: #fff5f5 !important;
+      border: 2px solid #ff4d4d;
+      box-shadow: 0 10px 25px rgba(255, 77, 77, 0.2);
+    }
+    
+    .house[data-house="blue"].leader {
+      background: #f0f7ff !important;
+      border: 2px solid #0077ff;
+      box-shadow: 0 10px 25px rgba(0, 119, 255, 0.2);
+    }
+    
+    .house[data-house="green"].leader {
+      background: #f2fff5 !important;
+      border: 2px solid #2ecc71;
+      box-shadow: 0 10px 25px rgba(46, 204, 113, 0.2);
+    }
+    
+    .house[data-house="yellow"].leader {
+      background: #fffdf0 !important;
+      border: 2px solid #f1c40f;
+      box-shadow: 0 10px 25px rgba(241, 196, 15, 0.2);
+    }
+
+    .house:hover{
+      transform: scale(1.05);
+    }
+
+    .card-header {
+      display: flex;
+      align-items: center;
+      padding: 20px; /* Moves the padding from .house to here */
+      width: 100%;
+      box-sizing: border-box;
+    }
+
+    /* The Expandable Drawer */
+    .details-drawer {
+      display: grid;
+      grid-template-rows: 0fr; /* Closed by default */
+      transition: grid-template-rows 0.4s ease-out;
+      background: #fcfcfc00;
+    }
+
+    .house.expanded .details-drawer {
+      grid-template-rows: 1fr; /* Open */
+    }
+
+    .details-content {
+      border-top: 1px solid #eee;
+      min-height: 0
+    }
+
+
+    .log-container {
+      /* Limit the height of the logs list */
+      opacity: 1 !important;
+      visibility: visible !important;
+      flex: 1;
+      max-height: 250px; 
+      overflow-y: auto; /*Adds scrollbar when too many logs */
+      border-top: 1px solid #eee;
+    }
+
+    /* 🎨 Optional: Styling the scrollbar to look cleaner */
+    .log-container::-webkit-scrollbar {
+      width: 6px;
+    }
+    .log-container::-webkit-scrollbar-track {
+      background: #f1f1f1;
+    }
+    .log-container::-webkit-scrollbar-thumb {
+      background: #ccc;
+      border-radius: 10px;
+    }
+    .log-container::-webkit-scrollbar-thumb:hover {
+      background: #999;
+    }
+
+    .log-item {
+      display: flex;
+      justify-content: space-between; /* Pushes reason left and points right */
+      align-items: center;
+      padding: 12px 20px;
+      border-bottom: 1px solid #f0f0f0;
+    }
+
+    .log-reason {
+      font-size: 0.95em;
+      color: #444;
+      line-height: 1.4;
+      max-width: 70%; /* Prevents text from hitting the points */
+    }
+
+    .log-points {
+      font-weight: bold;
+      color: #2ecc71; /* Green for points added */
+      font-size: 1.1em;
+    }
+
+    .log-points-negative {
+      font-weight: bold;
+      color: #e74c3c; /* Red if points were ever subtracted */
+      font-size: 1.1em;
+    }
+
+    .log-item:last-child { border-bottom: none; }
+
+    .no-points {
+      padding: 20px;
+      text-align: center;
+      color: #999;
+      font-style: italic;
+    }
+    
+    /* Match the score text color to the house border when leading */
+    .house.leader .score {
+      color: inherit; /* Takes the color from the card's border/text logic */
+    }
+
+    .admin-login-btn {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      width: 45px;
+      height: 45px;
+      background-color: #fff;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+      transition: all 0.3s ease;
+      z-index: 1000;
+      text-decoration: none;
+      color: #555;
+    }
+
+    .admin-login-btn:hover {
+      transform: scale(1.1);
+      background-color: #0077ff;
+      color: #fff;
+    }
+
+    .admin-login-btn svg {
+      width: 24px;
+      height: 24px;
+    }
+
+    @keyframes lift-and-slide {
+      0% {
+        transform: translateY(var(--travel-dist)) scale(1);
+        z-index: 1;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+      }
+      /* 20%: Card "lifts" off the page */
+      20% {
+        transform: translateY(var(--travel-dist)) scale(1.1);
+        z-index: 100;
+        box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+      }
+      /* 80%: Card has slid to its new position while still "floating" */
+      80% {
+        transform: translateY(0) scale(1.1);
+        z-index: 100;
+        box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+      }
+      /* 100%: Card "lands" in its new spot */
+      100% {
+        transform: translateY(0) scale(1);
+        z-index: 1;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+      }
+      
+      }
+
+    .house.moving-up {
+      /* This connects the JS trigger to the keyframe */
+      animation: lift-and-slide 0.8s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+    }
+
+    /* Ensure other cards slide smoothly out of the way */
+    .house:not(.moving-up) {
+      transition: transform 0.6s ease-out;
+    }
+
+    /* 1. The base gray style for skeletons */
+    .skeleton {
+      background-color: #e2e5e7;
+      background-image: linear-gradient(
+        90deg, 
+        rgba(255, 255, 255, 0) 0, 
+        rgba(255, 255, 255, 0.5) 50%, 
+        rgba(255, 255, 255, 0) 100%
+      );
+      background-size: 200% 100%;
+      animation: shimmer 1.5s infinite;
+      border-radius: 4px;
+      display: inline-block;
+    }
+
+    /* 2. The shimmer animation */
+    @keyframes shimmer {
+      0% { background-position: -200% 0; }
+      100% { background-position: 200% 0; }
+    }
+
+    /* 3. Specific sizes for our skeletons */
+    .skeleton-img { width: 60px; height: 60px; border-radius: 10%; }
+    .skeleton-name { width: 200px; height: 35px; margin-left: 10px; }
+    .skeleton-score { width: 40px; height: 40px; border-radius: 10%; }
+
+    
+
+    /* Adjust table to accommodate the button */
+    #logs-table td:last-child {
+      text-align: right;
+    }
+
+    .logout-btn{
+      margin-top: 30px;
+       display:none; 
+       z-index: 1000; 
+       padding: 10px 15px; 
+       background: #ff4757; 
+       color: white; border: 
+       none; border-radius: 8px; 
+       cursor: pointer; 
+       font-weight: bold;
+       box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        transition: transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1), 
+                box-shadow 0.3s ease, 
+                background 0.3s ease;
+        will-change: transform;
+    }
+
+    .logout-btn:hover{
+      transform: scale(1.05);
+    }
+   
+* {
+    -webkit-tap-highlight-color: transparent;
+  }
+    /* 📱 Mobile optimization */
+  @media (max-width: 600px) {
+
+    h1 {
+      font-size: 2em;
+      margin: 25px 0 15px;
+    }
+
+    .leaderboard {
+      width: 95%;
+      gap: 12px;
+    }
+
+    .house {
+      border-radius: 16px;
+    }
+
+    .house img {
+      width: 45px;
+      height: 45px;
+      margin-right: 12px;
+    }
+
+    .house .name {
+      font-size: 1.2em;
+    }
+
+    .house .score {
+      font-size: 1.2em;
+      width: 50px;
+    }
+
+    .leader {
+      transform: scale(1.02);
+    }
+
+       /* Specific glows based on house color */
+    .house[data-house="red"].leader {
+      background: #fff5f5 !important;
+      border: 2px solid #ff4d4d;
+      box-shadow: 0 10px 25px rgba(255, 77, 77, 0.2);
+    }
+    
+    .house[data-house="blue"].leader {
+      background: #f0f7ff !important;
+      border: 2px solid #0077ff;
+      box-shadow: 0 10px 25px rgba(0, 119, 255, 0.2);
+    }
+    
+    .house[data-house="green"].leader {
+      background: #f2fff5 !important;
+      border: 2px solid #2ecc71;
+      box-shadow: 0 10px 25px rgba(46, 204, 113, 0.2);
+    }
+    
+    .house[data-house="yellow"].leader {
+      background: #fffdf0 !important;
+      border: 2px solid #f1c40f;
+      box-shadow: 0 10px 25px rgba(241, 196, 15, 0.2);
+    }
+    
+    /* Match the score text color to the house border when leading */
+    .house.leader .score {
+      color: inherit; /* Takes the color from the card's border/text logic */
+    }
+
+    .house:hover{
+      transform: none;
+    }
+
+    .admin-login-btn {
+      width: 40px;
+      height: 40px;
+      top: 15px;
+      right: 15px;
+    }
+
+    .admin-login-btn svg {
+      width: 20px;
+      height: 20px;
+    }
+    
+    .log-list {
+      padding: 0px 20px;
+    }
+
+     .log-reason {
+      font-size: 0.85em;
+    }
+
+    .log-points {
+      font-size: 0.95em;
+    }
+  }
