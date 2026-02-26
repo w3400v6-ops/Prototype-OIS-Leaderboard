@@ -659,7 +659,7 @@
             const key = el.dataset.house;
             const scoreEl = el.querySelector('.score');
             const nameEl = el.querySelector('.name');
-
+           
             // 1. Re-insert the real image (replaces the skeleton-img div)
             // Adjust the path to your local image files
             const imgMap = {
@@ -685,16 +685,15 @@
                 </div>
               </div>
             `;
-
+            
+            renderHouseLogs(el, key);
             // Click to Expand Logic
             el.addEventListener('click', () => {
               const isExpanded = el.classList.contains('expanded');
               houseEls.forEach(h => h.classList.remove('expanded'));
               if (!isExpanded) {
-                renderHouseLogs(el, key);
-                void el.offsetWidth;
-                el.classList.add('expanded');
                 
+                el.classList.add('expanded');
               }
             });
 
@@ -785,34 +784,35 @@
 
       //REVERSE the array so the most recent log is first
       const reversedLogs = [...filteredLogs].reverse();
-
   
-  
-        container.innerHTML = reversedLogs.map(log => {
-          // Check if it's a penalty
-          const isPenalty = log.rankText === 'Penalty';
-          
-          // Format the description based on the type
-          const description = isPenalty 
-            ? `<strong>Penalty</strong> for <strong>${log.category}</strong>` 
-            : `Wins <strong>${log.rankText || 'Entry'}</strong> in <strong>${log.category || 'Event'}</strong>`;
+      const html = reversedLogs.map(log => {
+        // 🟢 Your Logic Integrated
+        const isPenalty = log.rankText === 'Penalty';
+        
+        const description = isPenalty 
+          ? `<strong>Penalty</strong> for <strong>${log.category}</strong>` 
+          : `Wins <strong>${log.rankText || 'Entry'}</strong> in <strong>${log.category || 'Event'}</strong>`;
 
-          // Format the points (+X for wins, X for penalties since it's already negative)
-          const pointsDisplay = isPenalty 
-            ? `${log.pointsAdded}` 
-            : `+${log.pointsAdded}`;
+        const pointsDisplay = isPenalty 
+          ? `${log.pointsAdded}` 
+          : `+${log.pointsAdded}`;
 
-          return `
-            <div class="log-item">
-              <div class="log-reason">
-                ${description}
-              </div>
-              <div class="${isPenalty ? 'log-points-negative' : 'log-points'}">
-                ${pointsDisplay}
-              </div>
+        return `
+          <div class="log-item" style="display: flex; justify-content: space-between; padding: 12px 20px; border-bottom: 1px solid #f0f0f0;">
+            <div class="log-reason">
+              ${description}
             </div>
-          `;
-        }).join('');
+            <div class="${isPenalty ? 'log-points-negative' : 'log-points'}">
+              ${pointsDisplay}
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      // Only update if content changed to avoid mobile flickering
+      if (container.innerHTML !== html) {
+        container.innerHTML = html;
+      }
       
     }
   </script>
