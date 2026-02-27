@@ -114,27 +114,41 @@ function updateRankingDropdown() {
     rankSelect.innerHTML = "";
 
     if (!type || !eventTypeData[type]) {
-    rankSelect.add(new Option("-- Select Event Type First --", ""));
-    return;
+        rankSelect.add(new Option("-- Select Event Type First --", ""));
+        return;
     }
 
     const scores = eventTypeData[type];
     rankSelect.add(new Option("-- Select Ranking --", ""));
 
-    // Loop through 1, 2, 3, (and 4 if Group)
+    // Add standard rankings from DB
     Object.keys(scores).forEach(rank => {
-    const pts = scores[rank];
-    const suffix = (rank == 1) ? "st" : (rank == 2) ? "nd" : (rank == 3) ? "rd" : "th";
-    const text = `${rank}${suffix} place - ${pts} points`;
-    rankSelect.add(new Option(text, pts)); // Value is the actual points
+        const pts = scores[rank];
+        const suffix = (rank == 1) ? "st" : (rank == 2) ? "nd" : (rank == 3) ? "rd" : "th";
+        const text = `${rank}${suffix} place - ${pts} points`;
+        rankSelect.add(new Option(text, pts));
     });
+
+    // 🟢 ADD THIS: Custom Option
+    rankSelect.add(new Option("-- Custom Point --", "Custom Point"))
 }
+
+document.getElementById('ranking-select').addEventListener('change', function() {
+    const customContainer = document.getElementById('custom-points-container');
+    // We check if the value is "Custom Point" to match your HTML
+    if (this.value === "Custom Point") {
+        customContainer.classList.remove('hidden');
+    } else {
+        customContainer.classList.add('hidden');
+    }
+});
 
 function updateScore() {
     const houseId = document.getElementById('house-select').value;
     const houseName = document.getElementById('house-select').options[document.getElementById('house-select').selectedIndex].text;
     const categorySelect = document.getElementById('category-select');
     const comment = document.getElementById('comment').value || "No comment provided"; // Handle empty comment
+    const rankSelect = document.getElementById('ranking-select');
     let category = categorySelect.value;
     let addedPoints = 0;
     let rankText = "";
@@ -150,16 +164,26 @@ function updateScore() {
     } 
     // Logic for Normal Scoring
     else {
-    addedPoints = parseInt(document.getElementById('ranking-select').value);
-    const rankSelect = document.getElementById('ranking-select');
-    rankText = rankSelect.options[rankSelect.selectedIndex].text.split(' - ')[0];
-    eventType = document.getElementById('event-type-select').value;
 
-    if (category === "Other") {
-        category = document.getElementById('custom-category-input').value.trim();
-    }
-    if (!eventType) return alert("Please select an Event Type.");
-    if (isNaN(addedPoints)) return alert("Please select a ranking.");
+        if (rankSelect.value === "Custom Point") {
+            // 🟢 Handle Custom Points
+            const customVal = parseInt(document.getElementById('custom-point-input').value);
+            if (isNaN(customVal)) return alert("Please enter a valid number for custom points.");
+            addedPoints = customVal;
+            rankText = ""; // Empty string as requested
+        } else {
+            // Standard Ranking logic
+            addedPoints = parseInt(rankSelect.value);
+            rankText = rankSelect.options[rankSelect.selectedIndex].text.split(' - ')[0];
+        }
+
+        eventType = document.getElementById('event-type-select').value;
+
+        if (category === "Other") {
+            category = document.getElementById('custom-category-input').value.trim();
+        }
+        if (!eventType) return alert("Please select an Event Type.");
+        if (isNaN(addedPoints)) return alert("Please select a ranking.");
     }
 
     if (!category || category === "") return alert("Category Required: Please select a category or enter a custom one under 'Other'.");
@@ -313,6 +337,13 @@ function startLogsListener() {
             <br><small style="color:#888;">"${log.comment}" — ${log.adminEmail}</small>
         `;
         }
+        else if (!log.rankText || log.rankText === "") {
+        descCell.innerHTML = `
+            <span class="log-house">${log.houseName}</span> gains <span class="log-house">${Math.abs(log.pointsAdded)} points </span> in <span class="log-house">${log.category}</span>. 
+            <br><small style="color:#888;">"${log.comment}" — ${log.adminEmail}</small>
+        `;
+        }
+        
         else{
         descCell.innerHTML = `
             <span class="log-house">${log.houseName}</span> gains <span class="log-house">${Math.abs(log.pointsAdded)} points </span> for winning
@@ -403,6 +434,13 @@ function startRecycleBinListener() {
             row.insertCell(1).innerHTML = `
             <strong>${item.houseName}</strong> loses <strong>${Math.abs(item.pointsAdded)} points </strong>
             for recieving a <strong>${item.rankText}</strong> due to <strong>${item.category}</strong>
+            <br><small> Deleted by — ${item.deletedBy}</small>
+        `;
+        }
+
+        else if (!log.rankText || log.rankText === "") {
+        descCell.innerHTML = `
+            <strong>${item.houseName}</strong> gains <strong>${Math.abs(item.pointsAdded)} points </strong> in <strong>${item.category}</strong>
             <br><small> Deleted by — ${item.deletedBy}</small>
         `;
         }

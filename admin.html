@@ -82,12 +82,18 @@
         <label>Ranking:</label>
         <select id="ranking-select">
           <option value="">-- Select Event Type First --</option>
+          <option value="Custom Point">-- Custom Point --</option>
         </select>
+      </div>
+
+       <div id="custom-points-container" class="hidden">
+        <label>Enter Custom Points:</label>
+        <input type="text" id="custom-point-input" placeholder="0">
       </div>
 
       <div id="deduction-section" class="hidden">
         <label style="color: #ef4444;">Points to Deduct (Enter as positive number):</label>
-        <input type="number" id="deduction-input" placeholder="e.g., 5">
+        <input type="number" id="deduction-input" placeholder="0">
         <p style="font-size: 0.8em; color: #666; margin-top: -2px;">Note: This will subtract points from the total.</p>
       </div>
 

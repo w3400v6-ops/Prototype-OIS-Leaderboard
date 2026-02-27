@@ -215,7 +215,7 @@ function renderHouseLogs(el, houseId) {
         const isPenalty = log.rankText === 'Penalty';
         const description = isPenalty 
             ? `<strong>Penalty</strong> for <strong>${log.category}</strong>` 
-            : `Wins <strong>${log.rankText || 'Entry'}</strong> in <strong>${log.category || 'Event'}</strong>`;
+            : `Wins <strong>${log.rankText || ''}</strong> in <strong>${log.category || 'Event'}</strong>`;
         const pointsDisplay = isPenalty ? `${log.pointsAdded}` : `+${log.pointsAdded}`;
 
         return `
