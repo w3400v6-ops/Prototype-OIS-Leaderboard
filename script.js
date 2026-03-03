@@ -132,9 +132,9 @@ function startLeaderboard() {
                 el.innerHTML = `
                     <div class="card-header">
                         <img src="${imgMap[key]}" alt="${data[key].name}">
-                        <div class="info" style="flex-grow:1;">
-                            <p class="name">${data[key].name}</p>
-                        </div>
+                        <div class="info" style="display: flex; align-items: center; flex-grow: 1;">
+                        <p class="name" style="margin: 0;">${data[key].name}</p>
+                        <span class="log-ticker" data-house-id="${key}"></span> </div>
                         <div class="score">${data[key].score}</div>
                     </div>
                     <div class="details-drawer">
@@ -148,6 +148,7 @@ function startLeaderboard() {
                 el.addEventListener('click', () => {
                     const isExpanded = el.classList.contains('expanded');
                     houseEls.forEach(h => h.classList.remove('expanded'));
+                    
                     if (!isExpanded) {
                         // Small delay to ensure browser paints the text during expansion
                         requestAnimationFrame(() => {
@@ -155,6 +156,7 @@ function startLeaderboard() {
                             el.classList.add('expanded');
                         });
                     }
+                    setTimeout(updateBodyState, 450)
                 });
 
                 currentData[key] = data[key].score;
@@ -199,6 +201,7 @@ function startLeaderboard() {
         }
     });
 }
+
 
 // 6. Log Rendering (The Logic you provided)
 function renderHouseLogs(el, houseId) {
@@ -251,6 +254,56 @@ function renderHouseLogs(el, houseId) {
     }
 }
 
+// 1. Track if any drawer is open
+function updateBodyState() {
+  const anyOpen = document.querySelector('.house.expanded');
+  document.body.classList.toggle('drawer-open', !!anyOpen);
+}
+
+// 2. The Ticker Loop
+const logIndices = {}; // Track which log index we are on for each house
+
+function runTicker() {
+
+  houseEls.forEach(el => {
+    // Skip updating if this specific house is expanded
+    if (el.classList.contains('expanded')) return;
+
+    const houseId = el.dataset.house;
+    const ticker = el.querySelector('.log-ticker');
+    
+    // Filter logs for this house and reverse so index 0 = Newest
+    const houseLogs = Object.values(allLogs)
+        .filter(l => l.houseId === houseId)
+        .reverse(); 
+
+    if (houseLogs.length === 0 || !ticker) return;
+
+    // Cycle the index
+    if (logIndices[houseId] === undefined) logIndices[houseId] = 0;
+    const index = logIndices[houseId] % houseLogs.length;
+    const log = houseLogs[index]; // reverse to show newest first
+
+    // Set text
+    const rank = log.rankText;
+    const logComment = log.comment && log.comment !== "No comment provided" ? ` - ${log.comment} ` : "";
+    
+    // Trigger animation
+    ticker.style.opacity = 0;
+    setTimeout(() => {
+        ticker.innerText = `${rank} in ${log.category}${logComment}`;
+        ticker.classList.remove('fade-ticker');
+        void ticker.offsetWidth; // Force reflow
+        ticker.classList.add('fade-ticker');
+    }, 300);
+
+    logIndices[houseId]++;
+  });
+}
+
+// Start the ticker interval (every 4 seconds)
+setInterval(runTicker, 4000);
+
 // 7. Animations (Kept as provided)
 function animateScore(el, from, to) {
     const duration = 900;
@@ -293,5 +346,4 @@ function animateCards(sortedEls) {
         houseEls.forEach(el => el.classList.remove('leader'));
         sortedEls[0].classList.add('leader');
     });
-
 }
