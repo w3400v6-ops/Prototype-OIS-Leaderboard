@@ -336,7 +336,7 @@ body {
   @media (max-width: 600px) {
 
     h1 {
-      font-size: 2em;
+      font-size: 1.8em;
       margin: 25px 0 15px;
     }
 
@@ -350,17 +350,17 @@ body {
     }
 
     .house img {
-      width: 45px;
-      height: 45px;
-      margin-right: 12px;
+      width: 35px;
+      height: 35px;
+      margin-right: 20px;
     }
 
     .house .name {
-      font-size: 1.2em;
+      font-size: 1em;
     }
 
     .house .score {
-      font-size: 1.2em;
+      font-size: 1em;
       width: 50px;
     }
 
@@ -419,10 +419,15 @@ body {
     }
 
      .log-reason {
-      font-size: 0.85em;
+      font-size: 0.8em;
     }
 
-    .log-points {
-      font-size: 0.95em;
+    .log-points, .log-points-negative {
+      font-size: 0.8em;
     }
+
+    .skeleton-img { width: 35px; height: 35px; border-radius: 10%; }
+    .skeleton-name { width: 150px; height: 25px; margin-left: 10px; }
+    .skeleton-score { width: 35px; height: 35px; border-radius: 10%; }
+
   }
