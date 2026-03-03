@@ -213,14 +213,32 @@ function renderHouseLogs(el, houseId) {
 
     const html = [...filteredLogs].reverse().map(log => {
         const isPenalty = log.rankText === 'Penalty';
-        const description = isPenalty 
-            ? `<strong>Penalty</strong> for <strong>${log.category}</strong>` 
-            : `Wins <strong>${log.rankText || ''}</strong> in <strong>${log.category || 'Event'}</strong>`;
+        
+        // 1. Logic for Custom Points (Empty RankText) or Standard Win
+        let description;
+        if (isPenalty) {
+            description = `<strong>Penalty</strong> for <strong>${log.category}</strong>`;
+        } else if (!log.rankText || log.rankText === "") {
+            // Format for Custom Points: "Gains X points in Category"
+            description = `In <strong>${log.category}</strong>`;
+        } else {
+            // Standard Format: "1st place in Category"
+            description = `<strong>${log.rankText}</strong> in <strong>${log.category}</strong>`;
+        }
+
+        // 2. Filter out the default comment
+        // Only add the comment if it's not empty and not the default placeholder
+        const commentText = (log.comment && log.comment !== "No comment provided") 
+            ? ` - ${log.comment}` 
+            : "";
+
         const pointsDisplay = isPenalty ? `${log.pointsAdded}` : `+${log.pointsAdded}`;
 
         return `
             <div class="log-item" style="display: flex; justify-content: space-between; padding: 12px 20px; border-bottom: 1px solid #f0f0f0;">
-                <div class="log-reason" style="color: #333;">${description}</div>
+                <div class="log-reason" style="color: #333;">
+                    ${description}${commentText}
+                </div>
                 <div class="${isPenalty ? 'log-points-negative' : 'log-points'}" style="font-weight:bold; color:${isPenalty ? '#e74c3c' : '#2ecc71'}">
                     ${pointsDisplay}
                 </div>
@@ -275,4 +293,5 @@ function animateCards(sortedEls) {
         houseEls.forEach(el => el.classList.remove('leader'));
         sortedEls[0].classList.add('leader');
     });
+
 }
