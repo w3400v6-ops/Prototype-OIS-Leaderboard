@@ -48,13 +48,18 @@ body {
     }
 
     .house .info {
-      flex-grow: 1;
+      display: flex;
+      align-items: center;
+      flex: 1;
+      min-width: 0;
+      overflow: hidden;
     }
 
     .house .name {
       font-size: 1.5em;
       font-weight: bold;
       margin: 0;
+      flex-shrink: 0;
       color: #222;
     }
 
@@ -325,6 +330,41 @@ body {
         will-change: transform;
     }
 
+    .house.expanded .log-ticker {
+        opacity: 0 !important;
+        visibility: hidden;
+        pointer-events: none;
+        transition: opacity 0.2s ease;
+    }
+
+    .log-ticker {
+      font-size: 0.85rem;
+      color: #666;
+      margin-left: 20px;
+      flex: 1;
+      opacity: 0; /* Hidden by default */
+      transition: opacity 0.3s ease;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      pointer-events: none;
+    }
+
+    /* 🟢 Only show the ticker when NO house is expanded */
+    body:not(.drawer-open) .log-ticker {
+      opacity: 1;
+    }
+
+    /* Animation for the fade loop */
+    .fade-ticker {
+      animation: fadeLoop 4s infinite;
+    }
+
+    @keyframes fadeLoop {
+      0%, 100% { opacity: 0; transform: translateY(5px); }
+      10%, 90% { opacity: 1; transform: translateY(0); }
+    }
+
     .logout-btn:hover{
       transform: scale(1.05);
     }
@@ -424,6 +464,11 @@ body {
 
     .log-points, .log-points-negative {
       font-size: 0.8em;
+    }
+
+    .log-ticker {
+      font-size: 0.60em;
+      margin-left: 10px;
     }
 
     .skeleton-img { width: 35px; height: 35px; border-radius: 10%; }
