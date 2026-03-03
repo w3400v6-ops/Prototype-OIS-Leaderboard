@@ -340,9 +340,16 @@ body {
   .container{
     max-width: 350px;
   }
+  
+  hr{
+    margin-top:20px;
+    margin-bottom:20px;
+  }
 
   h3{
     font-size: 16px;
+    margin-bottom: 20px;
+    margin-top: 20px;
   }
 
   .container {
@@ -354,7 +361,7 @@ body {
 
   /* Prevent iOS from zooming in when tapping inputs */
   input, select, textarea, button {
-    font-size: 14px !important; 
+    font-size: 14px !important;
   }
 
   /* Back button fix: Move it to a more natural spot */
@@ -364,20 +371,15 @@ body {
     left: 15px;
   }
 
-  #logs-table th{
-    font-size: 13px;
-  }
-  #logs-table td{
-    font-size: 11px;
+  #logs-table th,td{
+    font-size: 12px;
   }
 
-   .recycle-table tr{
-    font-size: 13px;
-  }
-  .recycle-table td{
-    font-size: 11px;
-  }
 
+   .recycle-table tr,.recycle-table td{
+    font-size: 12px;
+  }
+ 
   /* 3. Leaderboard scaling */
   .house {
     padding: 10px;
