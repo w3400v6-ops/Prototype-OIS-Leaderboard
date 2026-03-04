@@ -7,7 +7,8 @@ body {
       align-items: center;
       min-height: 100vh;
     }
-
+    a { text-decoration: none; }
+    hr { border: 0; border-top: 2px solid #eee; margin: 10px 0; }
     h1 {
       margin: 40px 0 20px;
       font-size: 3em;
@@ -214,33 +215,123 @@ body {
       color: inherit; /* Takes the color from the card's border/text logic */
     }
 
-    .admin-login-btn {
+    .admin-action-pill {
+      text-decoration: none;
       position: fixed;
       top: 20px;
       right: 20px;
-      width: 45px;
-      height: 45px;
-      background-color: #fff;
-      border-radius: 50%;
+      width: 50px; /* Circle shape initially */
+      height: 50px;
+      background: white;
+      border-radius: 25px;
       display: flex;
       align-items: center;
-      justify-content: center;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-      transition: all 0.3s ease;
+      overflow: hidden;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+      transition: width 0.3s , height 0.3s ease;
       z-index: 1000;
-      text-decoration: none;
+      border: 1px solid #eee;
+    }
+
+    /* 🟢 Hover State: Expand */
+    .admin-action-pill:hover {
+      display: grid;
+      width: 300px;
+      height: auto;
+      border-radius: 20px;
+      padding: 15px 10px;
+    }
+
+    .pill-icon {
+      min-width: 50px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      transition: transform 0.3s ease;
+    }
+
+    .pill-icon svg {
+      width: 24px;
+      height: 24px;
       color: #555;
     }
 
-    .admin-login-btn:hover {
-      transform: scale(1.1);
-      background-color: #0077ff;
-      color: #fff;
+    /* Move icon left on hover */
+    .admin-action-pill:hover .pill-icon {
+      transform: translateX(-5px);
     }
 
-    .admin-login-btn svg {
-      width: 24px;
-      height: 24px;
+     .pill-content {
+      white-space: nowrap;
+      transition: opacity 0.2s ease;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .admin-action-pill:hover .pill-content {
+      opacity: 1;
+      transition-delay: 0.2s; /* Wait for expansion to start */
+    }
+
+    .admin-action-pill:not(:hover) .profile-header {
+      margin-bottom: 0px;
+      border-bottom: none;
+      padding-bottom: 0px;
+    }
+
+    .admin-action-pill:not(:hover) .pill-menu {
+      display: none; 
+    }
+    .admin-action-pill:not(:hover) .user-email{
+      display: none; 
+    }
+
+    .profile-header {
+      display: flex;
+      align-items: center;
+      margin-bottom: 10px;
+      border-bottom: 1px solid #f5f5f5;
+      padding-bottom: 10px;
+    }
+
+    .user-email {
+      text-decoration: none !important;
+      font-size: 0.75rem;
+      font-weight: bold;
+      color: #555;
+    }
+
+    .pill-menu {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    /* 🟢 The Row Styling (Removes underline and adds hover) */
+    .action-row {
+      display: block;
+      padding: 8px 12px;
+      border-radius: 6px;
+      font-size: 0.85rem;
+      font-weight: 500;
+      color: #333;
+      text-decoration: none !important; /* Force remove underline */
+      transition: background 0.2s ease, color 0.2s ease;
+      cursor: pointer;
+    }
+
+    /* 🟢 Darken background on hover */
+    .action-row:hover {
+      background: rgba(0, 0, 0, 0.05); /* Slight darken */
+      text-decoration: none !important;
+    }
+
+    .action-row.logout {
+      color: #ff4d4f;
+    }
+
+    .action-row.logout:hover {
+      background: #fff1f0; /* Soft red darken for logout */
     }
 
     @keyframes lift-and-slide {
@@ -313,23 +404,6 @@ body {
       text-align: right;
     }
 
-    .logout-btn{
-      margin-top: 30px;
-       display:none; 
-       z-index: 1000; 
-       padding: 10px 15px; 
-       background: #ff4757; 
-       color: white; border: 
-       none; border-radius: 8px; 
-       cursor: pointer; 
-       font-weight: bold;
-       box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-        transition: transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1), 
-                box-shadow 0.3s ease, 
-                background 0.3s ease;
-        will-change: transform;
-    }
-
     .house.expanded .log-ticker {
         opacity: 0 !important;
         visibility: hidden;
@@ -363,10 +437,6 @@ body {
     @keyframes fadeLoop {
       0%, 100% { opacity: 0; transform: translateY(5px); }
       10%, 90% { opacity: 1; transform: translateY(0); }
-    }
-
-    .logout-btn:hover{
-      transform: scale(1.05);
     }
    
 * {
@@ -442,17 +512,6 @@ body {
       transform: none;
     }
 
-    .admin-login-btn {
-      width: 40px;
-      height: 40px;
-      top: 15px;
-      right: 15px;
-    }
-
-    .admin-login-btn svg {
-      width: 20px;
-      height: 20px;
-    }
     
     .log-list {
       padding: 0px 20px;
