@@ -41,7 +41,9 @@ db.ref("Logs").on("value", (snap) => {
 
 // 3. Auth State Observer
 auth.onAuthStateChanged(async (user) => {
-    const adminBtn = document.getElementById('admin-btn');
+    const pillEmail = document.getElementById('pill-email');
+    const adminLink = document.getElementById('pill-admin-link');
+
 
     if (user && user.email.endsWith('@oakbridge.edu.my')) {
         authOverlay.style.display = 'none';
@@ -50,14 +52,15 @@ auth.onAuthStateChanged(async (user) => {
         // Sanitize email for Firebase keys (replace . with ,)
         const emailKey = user.email.replace(/\./g, ',');
         const adminRef = db.ref('AdminEmails/' + emailKey);
+        pillEmail.textContent = user.email;
 
         try {
             const snapshot = await adminRef.once('value'); // Replaces get()
             logoutBtn.style.display = 'flex';
             if (snapshot.exists()) {
-                adminBtn.style.display = "flex";
+                adminLink.style.display = "flex";
             } else {
-                adminBtn.style.display = "none";
+                adminLink.style.display = "none";
             }
         } catch (error) {
             console.error("Admin check failed:", error);
@@ -65,7 +68,7 @@ auth.onAuthStateChanged(async (user) => {
 
     } else {
         authOverlay.style.display = 'flex';
-        adminBtn.style.display = "none";
+        adminLink.style.display = "none";
         if (user) {
             alert("Access Denied: Please use your @oakbridge.edu.my account.");
             auth.signOut();
@@ -84,7 +87,7 @@ loginBtn.addEventListener('click', () => {
         });
 });
 
-const logoutBtn = document.getElementById('logout-btn');
+const logoutBtn = document.getElementById('pill-logout-link');
 // 🟢 The actual Logout Function
 logoutBtn.addEventListener('click', () => {
     if (confirm("Are you sure you want to sign out?")) {
