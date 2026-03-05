@@ -16,6 +16,19 @@ body {
       text-align: center;
     }
 
+      .prototype-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            background-image: url('prototype-bg.png');
+            background-repeat: repeat;
+            opacity: 0.1;
+            pointer-events: none; /* Allows you to click things 'through' the image */
+          }
+
     .leaderboard {
       width: 90%;
       max-width: 800px;
@@ -568,3 +581,4 @@ body {
 
 
   }
+
