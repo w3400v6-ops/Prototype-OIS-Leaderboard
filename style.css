@@ -534,4 +534,37 @@ body {
     .skeleton-name { width: 150px; height: 25px; margin-left: 10px; }
     .skeleton-score { width: 35px; height: 35px; border-radius: 10%; }
 
+        .admin-action-pill
+    {
+      width: 30px;
+      height: 30px;
+    }
+
+    .admin-action-pill:hover{
+      width: 250px;
+    }
+
+    .pill-icon {
+      min-width: 30px;
+    }
+
+    .admin-action-pill:hover .pill-icon{
+      margin-left: 10px;
+      margin-right: 10px;
+    }
+
+    .pill-icon svg{
+      width: 18px;
+      height: 18px;
+    }
+
+    .user-email{
+      font-size: 0.65em;
+    }
+    
+    .action-row{
+      font-size: 0.65em;
+    }
+
+
   }
