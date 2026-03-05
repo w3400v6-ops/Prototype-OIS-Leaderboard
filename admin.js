@@ -438,7 +438,7 @@ function startRecycleBinListener() {
         `;
         }
 
-        else if (!log.rankText || log.rankText === "") {
+        else if (!item.rankText || item.rankText === "") {
         descCell.innerHTML = `
             <strong>${item.houseName}</strong> gains <strong>${Math.abs(item.pointsAdded)} points </strong> in <strong>${item.category}</strong>
             <br><small> Deleted by — ${item.deletedBy}</small>
@@ -511,4 +511,5 @@ function startIdleTracking() {
     document.addEventListener(e, resetTimer, true);
     });
     resetTimer();
+
 }
