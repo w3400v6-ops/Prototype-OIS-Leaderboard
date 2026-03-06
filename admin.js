@@ -32,7 +32,7 @@ if (user && user.email.endsWith('@oakbridge.edu.my')) {
         unauthorizedSection.classList.add('hidden');
         adminSection.classList.remove('hidden');
         loadingOverlay.classList.add('hidden');
-        document.getElementById('admin-email-display').innerText = user.email;
+        document.getElementById('pill-email').innerText = user.email;
 
         // Start all your listeners
         fetchInitialData();
@@ -431,7 +431,7 @@ function startRecycleBinListener() {
         row.insertCell(0).innerHTML = `${deletedAt}`;
 
         if (item.rankText === "Penalty"){
-            row.insertCell(1).innerHTML = `
+        row.insertCell(1).innerHTML = `
             <strong>${item.houseName}</strong> loses <strong>${Math.abs(item.pointsAdded)} points </strong>
             for recieving a <strong>${item.rankText}</strong> due to <strong>${item.category}</strong>
             <br><small> Deleted by — ${item.deletedBy}</small>
@@ -511,6 +511,19 @@ function startIdleTracking() {
     document.addEventListener(e, resetTimer, true);
     });
     resetTimer();
-
 }
 
+
+const logoutBtn = document.getElementById('pill-logout-link');
+
+logoutBtn.addEventListener('click', () => {
+    if (confirm("Are you sure you want to sign out?")) {
+        auth.signOut().then(() => {
+            console.log("User signed out.");
+            // Force a page reload to clear all cached data and listeners
+            window.location.reload(); 
+        }).catch((error) => {
+            console.error("Logout Error:", error);
+        });
+    }
+});

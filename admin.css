@@ -9,6 +9,138 @@ body {
       padding: 20px;
     }
 
+    .prototype-bg {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: -1;
+      background-image: url('prototype-bg.png');
+      background-repeat: repeat;
+      opacity: 0.1;
+      pointer-events: none; /* Allows you to click things 'through' the image */
+    }
+
+    .admin-action-pill {
+      text-decoration: none;
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      width: 50px; /* Circle shape initially */
+      height: 50px;
+      background: white;
+      border-radius: 25px;
+      display: flex;
+      align-items: center;
+      overflow: hidden;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+      transition: width 0.3s , height 0.3s ease;
+      z-index: 1000;
+      border: 1px solid #eee;
+    }
+
+    /* 🟢 Hover State: Expand */
+    .admin-action-pill:hover {
+      display: grid;
+      width: 300px;
+      height: auto;
+      border-radius: 20px;
+      padding: 15px 10px;
+    }
+
+    .pill-icon {
+      min-width: 50px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      transition: transform 0.3s ease;
+    }
+
+    .pill-icon svg {
+      width: 24px;
+      height: 24px;
+      color: #555;
+    }
+
+    /* Move icon left on hover */
+    .admin-action-pill:hover .pill-icon {
+      transform: translateX(-5px);
+    }
+
+     .pill-content {
+      white-space: nowrap;
+      transition: opacity 0.2s ease;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .admin-action-pill:hover .pill-content {
+      opacity: 1;
+      transition-delay: 0.2s; /* Wait for expansion to start */
+    }
+
+    .admin-action-pill:not(:hover) .profile-header {
+      margin-bottom: 0px;
+      border-bottom: none;
+      padding-bottom: 0px;
+    }
+
+    .admin-action-pill:not(:hover) .pill-menu {
+      display: none; 
+    }
+    .admin-action-pill:not(:hover) .user-email{
+      display: none; 
+    }
+
+    .profile-header {
+      display: flex;
+      align-items: center;
+      margin-bottom: 10px;
+      border-bottom: 1px solid #f5f5f5;
+      padding-bottom: 10px;
+    }
+
+    .user-email {
+      text-decoration: none !important;
+      font-size: 0.75rem;
+      font-weight: bold;
+      color: #555;
+    }
+
+    .pill-menu {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    /* 🟢 The Row Styling (Removes underline and adds hover) */
+    .action-row {
+      display: block;
+      padding: 8px 12px;
+      border-radius: 6px;
+      font-size: 0.85rem;
+      font-weight: 500;
+      color: #333;
+      text-decoration: none !important; /* Force remove underline */
+      transition: background 0.2s ease, color 0.2s ease;
+      cursor: pointer;
+    }
+
+    /* 🟢 Darken background on hover */
+    .action-row:hover {
+      background: rgba(0, 0, 0, 0.05); /* Slight darken */
+      text-decoration: none !important;
+    }
+
+    .action-row.logout {
+      color: #ff4d4f;
+    }
+
+    .action-row.logout:hover {
+      background: #fff1f0; /* Soft red darken for logout */
+    }
+
     /* Back Button */
     .back-btn {
       position: absolute;
@@ -45,14 +177,6 @@ body {
       border-radius: 8px;
       box-sizing: border-box;
       font-size: 1em;
-    }
-
-    .user-info-bar {
-      text-align: left;
-      font-size: 0.85em;
-      color: #666;
-      margin-bottom: 10px;
-      font-style: italic;
     }
 
 
@@ -396,4 +520,36 @@ body {
     margin-left: 5px;
     margin-right: 10px
   }
+
+  .admin-action-pill
+    {
+      width: 35px;
+      height: 35px;
+    }
+
+    .admin-action-pill:hover{
+      width: 250px;
+    }
+
+    .pill-icon {
+      min-width: 35px;
+    }
+
+    .admin-action-pill:hover .pill-icon{
+      margin-left: 10px;
+      margin-right: 10px;
+    }
+
+    .pill-icon svg{
+      width: 18px;
+      height: 18px;
+    }
+
+    .user-email{
+      font-size: 0.65em;
+    }
+    
+    .action-row{
+      font-size: 0.65em;
+    }
 }
