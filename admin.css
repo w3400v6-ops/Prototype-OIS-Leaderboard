@@ -356,6 +356,23 @@ body {
     .skeleton-score { width: 25px; height: 25px; border-radius: 10%; }
     /* ---------------------------- */
 
+    .bulk-upload-section {
+      margin-top: 30px;
+      padding: 20px;
+      background: #f0f7ff;
+      border: 1px dashed #0077ff;
+      border-radius: 12px;
+    }
+
+    #upload-btn {
+      background: #2ecc71; /* Green to distinguish from single add */
+    }
+    #upload-btn:hover {
+      background: #27ae60;
+    }
+
+
+
     /* Recycle Bin Icon Style */
     .icon-btn {
       background: none;
