@@ -63,18 +63,27 @@ body {
 
     .house .info {
       display: flex;
-      align-items: center;
+      flex-direction: column;
       flex: 1;
       min-width: 0;
       overflow: hidden;
+      transition: all 0.2s ease;
     }
 
     .house .name {
       font-size: 1.5em;
       font-weight: bold;
       margin: 0;
+      margin-right: 20px;
       flex-shrink: 0;
       color: #222;
+      transform: translateY(10px);
+      transition: transform 0.5s ease;
+    }
+
+    .name.shifted {
+      transform: translateY(0px);
+      transition: transform 0.5s ease;
     }
 
     .house .score {
@@ -406,36 +415,56 @@ body {
     }
 
     /* 3. Specific sizes for our skeletons */
-    .skeleton-img { width: 60px; height: 60px; border-radius: 10%; }
+    .skeleton-img { width: 70px; height: 70px; border-radius: 10%; }
     .skeleton-name { width: 200px; height: 35px; margin-left: 10px; }
     .skeleton-score { width: 40px; height: 40px; border-radius: 10%; }
-
-    
 
     /* Adjust table to accommodate the button */
     #logs-table td:last-child {
       text-align: right;
     }
 
-    .house.expanded .log-ticker {
+    .house.expanded .ticker-text {
         opacity: 0 !important;
-        visibility: hidden;
         pointer-events: none;
         transition: opacity 0.2s ease;
     }
 
+     .house.expanded .info {
+        transform:translateY(10px);
+    }
+
     .log-ticker {
       font-size: 0.85rem;
-      color: #666;
-      margin-left: 20px;
-      flex: 1;
-      opacity: 0; /* Hidden by default */
-      transition: opacity 0.3s ease;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      pointer-events: none;
+      color: #777;
+      margin-top: 2px;
+      white-space: nowrap; /* single line */
+      overflow: hidden; 
+      width: 100%;
+      position: relative;
+      transition: opacity 0.2s ease;
     }
+
+    .ticker-text {
+      display: inline-block;
+      padding-left: 0;
+      /* 🟢 This animation will only be triggered if the text is long */
+      transition: opacity 0.3s ease;
+    }
+
+    /* 🟢 The Scrolling Animation */
+    @keyframes tickerScroll {
+      0% { transform: translateX(0); }
+      20% { transform: translateX(0); } /* Pause at the start */
+      80% { transform: translateX(-100%); } /* Scroll to end */
+      100% { transform: translateX(-100%); }
+    }
+
+    .should-scroll {
+      animation: tickerScroll 8s linear infinite;
+      padding-right: 50px; /* Space before the loop restarts */
+    }
+    
 
     /* 🟢 Only show the ticker when NO house is expanded */
     body:not(.drawer-open) .log-ticker {
@@ -480,6 +509,12 @@ body {
 
     .house .name {
       font-size: 1em;
+      margin-right: 10px;
+      transform: translateY(5px);
+    }
+
+    .name.shifted{
+      transform: translateY(-5px);
     }
 
     .house .score {
@@ -525,6 +560,10 @@ body {
       transform: none;
     }
 
+     .house.expanded .info {
+        transform:translateY(5px);
+    }
+
     
     .log-list {
       padding: 0px 20px;
@@ -540,7 +579,6 @@ body {
 
     .log-ticker {
       font-size: 0.60em;
-      margin-left: 10px;
     }
 
     .skeleton-img { width: 35px; height: 35px; border-radius: 10%; }

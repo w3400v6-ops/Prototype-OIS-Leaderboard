@@ -135,9 +135,12 @@ function startLeaderboard() {
                 el.innerHTML = `
                     <div class="card-header">
                         <img src="${imgMap[key]}" alt="${data[key].name}">
-                        <div class="info" style="display: flex; align-items: center; flex-grow: 1;">
-                        <p class="name" style="margin: 0;">${data[key].name}</p>
-                        <span class="log-ticker" data-house-id="${key}"></span> </div>
+                        <div class="info">
+                            <div class="name">${data[key].name}</div>
+                            <div class="log-ticker">
+                                <span class="ticker-text"></span>
+                            </div> 
+                        </div>
                         <div class="score">${data[key].score}</div>
                     </div>
                     <div class="details-drawer">
@@ -267,40 +270,55 @@ function updateBodyState() {
 const logIndices = {}; // Track which log index we are on for each house
 
 function runTicker() {
-
-  houseEls.forEach(el => {
-    // Skip updating if this specific house is expanded
-    if (el.classList.contains('expanded')) return;
-
-    const houseId = el.dataset.house;
-    const ticker = el.querySelector('.log-ticker');
     
-    // Filter logs for this house and reverse so index 0 = Newest
-    const houseLogs = Object.values(allLogs)
-        .filter(l => l.houseId === houseId)
-        .reverse(); 
+    houseEls.forEach(el => {
+        // Skip updating if this specific house is expanded
+        if (el.classList.contains('expanded')) return;
 
-    if (houseLogs.length === 0 || !ticker) return;
+        const nameEl = el.querySelector('.name');
+        if (nameEl) {
+            nameEl.classList.add('shifted');
+        }
+        const houseId = el.dataset.house;
+        const ticker = el.querySelector('.log-ticker');
+        const tickerText = el.querySelector('.ticker-text')
+        
+        // Filter logs for this house and reverse so index 0 = Newest
+        const houseLogs = Object.values(allLogs)
+            .filter(l => l.houseId === houseId)
+            .reverse(); 
 
-    // Cycle the index
-    if (logIndices[houseId] === undefined) logIndices[houseId] = 0;
-    const index = logIndices[houseId] % houseLogs.length;
-    const log = houseLogs[index]; // reverse to show newest first
+        if (houseLogs.length === 0 || !ticker) return;
 
-    // Set text
-    const rank = log.rankText;
-    const logComment = log.comment && log.comment !== "No comment provided" ? ` - ${log.comment} ` : "";
-    
-    // Trigger animation
-    ticker.style.opacity = 0;
-    setTimeout(() => {
-        ticker.innerText = `${rank} in ${log.category}${logComment}`;
-        ticker.classList.remove('fade-ticker');
-        void ticker.offsetWidth; // Force reflow
-        ticker.classList.add('fade-ticker');
-    }, 300);
+        // Cycle the index
+        if (logIndices[houseId] === undefined) logIndices[houseId] = 0;
+        const index = logIndices[houseId] % houseLogs.length;
+        const log = houseLogs[index]; // reverse to show newest first
 
-    logIndices[houseId]++;
+        // Set text
+        const rank = log.rankText;
+        const logComment = log.comment && log.comment !== "No comment provided" ? ` - ${log.comment} ` : "";
+        
+
+        // Trigger animation
+        ticker.style.opacity = 0;
+        setTimeout(() => {
+            tickerText.innerText = `${rank} in ${log.category}${logComment}`;
+            ticker.classList.remove('fade-ticker');
+            ticker.classList.add('fade-ticker');
+            
+            setTimeout(() => {
+                if (tickerText.offsetWidth > ticker.offsetWidth) {
+                    tickerText.classList.add('should-scroll');
+                }
+            }, 100);
+
+                tickerText.classList.remove('should-scroll');
+            tickerText.style.transform = "translateX(0)"
+
+        }, 300);
+
+        logIndices[houseId]++;
   });
 }
 
