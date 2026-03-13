@@ -6,8 +6,7 @@ async function handleBulkUpload() {
     
     if (!fileInput.files[0]) return alert("Please select a CSV file.");
 
-    // Reset UI
-    status.innerHTML = "⏳ Processing...";
+    status.innerHTML = "⏳ Auditing file for errors...";
     status.style.color = "#333";
     errorLog.classList.add('hidden');
     errorList.innerHTML = "";
@@ -28,79 +27,97 @@ async function handleBulkUpload() {
             skipEmptyLines: true,
             complete: async function(results) {
                 const rows = results.data;
-                let successCount = 0;
-                let failureDetails = [];
+                const validationErrors = [];
+                const readyToUpload = [];
 
-                for (let i = 0; i < rows.length; i++) {
-                    const row = rows[i];
-                    const lineNumber = i + 2; // Row 1 is header, so data starts at 2
-                    
+                // --- PASS 1: THE AUDITOR ---
+                rows.forEach((row, i) => {
+                    const lineNumber = i + 2;
                     const houseName = row.House?.trim();
                     const houseId = findHouseId(houseName);
                     const addedPoints = parseInt(row.Points);
                     const category = row.Category?.trim();
-                    
-                    // --- VALIDATION CHECKS ---
-                    let errorMsg = "";
-                    if (!houseName) errorMsg = "House name is missing.";
-                    else if (!houseId) errorMsg = `House "${houseName}" not found in database. Check spelling.`;
-                    else if (isNaN(addedPoints)) errorMsg = `Invalid points value: "${row.Points}".`;
-                    else if (!category) errorMsg = "Category is missing.";
 
-                    if (errorMsg) {
-                        failureDetails.push(`Line ${lineNumber}: ${errorMsg}`);
-                        continue; // Skip to next row
+                    let rowError = "";
+                    if (!houseName) rowError = "Missing House name.";
+                    else if (!houseId) rowError = `House "${houseName}" is not recognized.`;
+                    else if (isNaN(addedPoints)) rowError = `Points must be a number (found "${row.Points}").`;
+                    else if (!category) rowError = "Missing Category.";
+
+                    if (rowError) {
+                        validationErrors.push(`Line ${lineNumber}: ${rowError}`);
+                    } else {
+                        // Store the validated data so we don't have to look it up again
+                        readyToUpload.push({
+                            houseId,
+                            houseName,
+                            addedPoints,
+                            category,
+                            rankText: row.Rank || "",
+                            eventType: row.EventType || "",
+                            comment: row.Comment || ""
+                        });
                     }
+                });
 
-                    // --- DATABASE UPDATE ---
+                // --- DECISION POINT ---
+                if (validationErrors.length > 0) {
+                    status.innerHTML = "❌ Upload Cancelled: Errors Found";
+                    status.style.color = "#ef4444";
+                    errorLog.classList.remove('hidden');
+                    
+                    validationErrors.forEach(msg => {
+                        const li = document.createElement('li');
+                        li.innerText = msg;
+                        errorList.appendChild(li);
+                    });
+                    
+                    alert("No data was uploaded. Please fix the errors listed below and try again.");
+                    return; // STOP HERE
+                }
+
+                // --- PASS 2: THE EXECUTOR (Only runs if 0 errors) ---
+                status.innerHTML = `🚀 No errors found! Uploading ${readyToUpload.length} entries...`;
+                status.style.color = "#0077ff";
+
+                let successCount = 0;
+                for (const item of readyToUpload) {
                     try {
-                        const houseRef = db.ref(`Houses/${houseId}/score`);
-                        const result = await houseRef.transaction(curr => (curr || 0) + addedPoints);
+                        const houseRef = db.ref(`Houses/${item.houseId}/score`);
+                        const result = await houseRef.transaction(curr => (curr || 0) + item.addedPoints);
 
                         if (result.committed) {
                             const newScore = result.snapshot.val();
-                            const oldScore = newScore - addedPoints;
+                            const oldScore = newScore - item.addedPoints;
                             
                             await db.ref('Logs').push().set({
                                 fullDateTime: new Date().toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' }),
                                 unixTimestamp: firebase.database.ServerValue.TIMESTAMP,
-                                rankText: row.Rank || "",
-                                houseId: houseId,
-                                houseName: houseName,
+                                rankText: item.rankText,
+                                houseId: item.houseId,
+                                houseName: item.houseName,
                                 previousPoints: oldScore,
-                                pointsAdded: addedPoints,
+                                pointsAdded: item.addedPoints,
                                 newTotal: newScore,
-                                category: category,
-                                eventType: row.EventType || "",
-                                comment: row.Comment || "No comment provided",
+                                category: item.category,
+                                eventType: item.eventType,
+                                comment: item.comment,
                                 adminEmail: auth.currentUser.email
                             });
                             successCount++;
                         }
                     } catch (e) {
-                        failureDetails.push(`Line ${lineNumber}: Database write failed.`);
+                        console.error("Database error during upload:", e);
                     }
                 }
 
-                // --- FINAL REPORTING ---
-                status.innerHTML = `✅ Successfully added ${successCount} entries.`;
-                
-                if (failureDetails.length > 0) {
-                    status.innerHTML += ` ⚠️ ${failureDetails.length} errors found.`;
-                    errorLog.classList.remove('hidden');
-                    
-                    failureDetails.forEach(msg => {
-                        const li = document.createElement('li');
-                        li.innerText = msg;
-                        errorList.appendChild(li);
-                    });
-                }
-                
+                status.innerHTML = `✅ Successfully uploaded ${successCount} entries!`;
+                status.style.color = "#22c55e";
                 fileInput.value = ""; 
             }
         });
     } catch (err) {
-        status.innerHTML = "❌ Error: " + err.message;
+        status.innerHTML = "❌ Critical Error: " + err.message;
     }
 }
 
