@@ -430,7 +430,7 @@ body {
         transition: opacity 0.2s ease;
     }
 
-     .house.expanded .info {
+     .house.expanded .info:has(.name.shifted) {
         transform:translateY(10px);
     }
 
@@ -510,11 +510,11 @@ body {
     .house .name {
       font-size: 1em;
       margin-right: 10px;
-      transform: translateY(5px);
+      transform: translateY(6px);
     }
 
     .name.shifted{
-      transform: translateY(-5px);
+      transform: translateY(1px);
     }
 
     .house .score {
@@ -560,10 +560,9 @@ body {
       transform: none;
     }
 
-     .house.expanded .info {
-        transform:translateY(5px);
+    .house.expanded .info:has(.name.shifted) {
+      transform:translateY(6px);
     }
-
     
     .log-list {
       padding: 0px 20px;
