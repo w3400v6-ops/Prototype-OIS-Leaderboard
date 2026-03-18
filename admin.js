@@ -283,53 +283,51 @@ function expandLogs() {
     }
 }
 
+let currentPage = 1;
+const logsPerPage = 10;
+let totalLogsArray = []; // To store the logs for pagination math
+
 function startLogsListener() {
-    const logsRef = db.ref('Logs');
-
-    // 1. First, check the total count of logs to see if we even need a button
-    logsRef.on('value', totalSnapshot => {
-    const totalCount = totalSnapshot.numChildren();
-    const readMoreContainer = document.getElementById('read-more-container');
-
-    // If total logs in DB is more than what we are currently displaying, show button
-    if (totalCount > displayLimit) {
-        readMoreContainer.classList.remove('hidden');
-    } else {
-        readMoreContainer.classList.add('hidden');
-    }
-    });
-
-    // Listen for the last 5 logs
-    logsRef.orderByChild('unixTimestamp').limitToLast(displayLimit).on('value', snapshot => {
-    const logsBody = document.getElementById('logs-body');
-    logsBody.innerHTML = ""; // Clear current table
-
-    const logs = [];
+  db.ref('Logs').on('value', snapshot => {
+    totalLogsArray = [];
     snapshot.forEach(child => {
-        // 1. Get the data fields (houseName, pointsAdded, etc.)
-        const data = child.val();
-        // 2. Get the UNIQUE ID (the key like -Njk123...)
-        const id = child.key;
-        // 3. Combine them into one object and push to our array
-        logs.push({ id: id, ...data });
+      totalLogsArray.push({ id: child.key, ...child.val() });
     });
 
-    // Reverse so the newest is at the top
-    logs.reverse().forEach(log => {
-        const row = logsBody.insertRow();
-        
-        // Column 1: Time
-        const timeCell = row.insertCell(0);
-        const AddedAt = new Date(log.unixTimestamp).toLocaleString([], {year:"numeric", month:'numeric', day:'numeric', hour:'2-digit', minute:'2-digit'});
-        timeCell.innerHTML = `${AddedAt}`;
+    // Sort newest first
+    totalLogsArray.sort((a, b) => b.unixTimestamp - a.unixTimestamp);
 
+    renderLogTable();
+    renderPaginationControls();
+  });
+}
 
-        // Column 2: Description
-        const descCell = row.insertCell(1);
-        //const pointText = log.pointsAdded > 0 ? `added ${log.pointsAdded}` : `removed ${Math.abs(log.pointsAdded)}`;
-        const rankInfo = log.rankText ? `${log.rankText}` : "";
+function renderLogTable() {
+    const container = document.querySelector('.logs-container');
+    if (container) {
+        container.scrollTop = 0; // Reset scroll to top on page change
+    }
 
-        if (log.rankText === "Penalty")
+  const logsBody = document.getElementById('logs-body');
+  logsBody.innerHTML = "";
+
+  // MATH: Calculate which 10 logs to show
+  // Page 1: 0 to 10 | Page 2: 10 to 20...
+  const start = (currentPage - 1) * logsPerPage;
+  const end = start + logsPerPage;
+  const visibleLogs = totalLogsArray.slice(start, end);
+
+  visibleLogs.forEach(log => {
+    const row = logsBody.insertRow();
+    
+    // Time Column
+    const time =  new Date(log.unixTimestamp).toLocaleString([], {year:"numeric", month:'numeric', day:'numeric', hour:'2-digit', minute:'2-digit'});
+    row.insertCell(0).innerHTML = `${time}`;
+
+    const descCell = row.insertCell(1);
+    const rankInfo = log.rankText ? `${log.rankText}` : "";
+
+    if (log.rankText === "Penalty")
         {
         descCell.innerHTML = `
             <span class="log-house">${log.houseName}</span> loses <span class="log-house">${Math.abs(log.pointsAdded)} points </span> for receiving a
@@ -351,20 +349,41 @@ function startLogsListener() {
             <br><small style="color:#888;">"${log.comment}" — ${log.adminEmail}</small>
         `;
         }
-        
+    // Delete Icon Column
+    const actionCell = row.insertCell(2);
+    actionCell.innerHTML = `<button class="icon-btn" onclick="deleteLog('${log.id}', ${JSON.stringify(log).replace(/"/g, '&quot;')})">
+      <svg viewBox="0 0 24 24"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
+    </button>`;
+  });
+}
 
-        const actionCell = row.insertCell(2);
-        const btn = document.createElement('button');
-        btn.className = "icon-btn";
-        btn.title = "Delete and Revert Points";
-        btn.innerHTML = `
-        <svg viewBox="0 0 24 24">
-            <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
-        </svg>`;
-        btn.onclick = () => deleteLog(log.id, log);
-        actionCell.appendChild(btn)
-    });
-    });
+function renderPaginationControls() {
+  const totalPages = Math.ceil(totalLogsArray.length / logsPerPage);
+  const pageNumbersDiv = document.getElementById('page-numbers');
+  pageNumbersDiv.innerHTML = "";
+
+  // Disable Prev/Next if at boundaries
+  document.getElementById('prev-page').disabled = (currentPage === 1);
+  document.getElementById('next-page').disabled = (currentPage === totalPages || totalPages === 0);
+
+  // Generate Number Buttons
+  for (let i = 1; i <= totalPages; i++) {
+    const btn = document.createElement('span');
+    btn.innerText = i;
+    btn.className = `page-num ${i === currentPage ? 'active' : ''}`;
+    btn.onclick = () => {
+      currentPage = i;
+      renderLogTable();
+      renderPaginationControls();
+    };
+    pageNumbersDiv.appendChild(btn);
+  }
+}
+
+function changePage(direction) {
+  currentPage += direction;
+  renderLogTable();
+  renderPaginationControls();
 }
 
 function deleteLog(logId, logData) {
