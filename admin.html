@@ -115,9 +115,8 @@
 
       <hr>
       <h3>Recent Activity</h3>
-     
-        <div class="logs-container">
-          <table id="logs-table">
+        <div class="table-component">
+          <table id="header-table">
             <thead>
               <tr>
                 <th>Time</th>
@@ -125,14 +124,19 @@
                 <th></th>
               </tr>
             </thead>
-            <tbody id="logs-body"></tbody>
           </table>
-        </div>
-        
-        <div id="pagination-container" class="pagination-bar">
-          <button id="prev-page" onclick="changePage(-1)">« Prev</button>
-          <div id="page-numbers"></div>
-          <button id="next-page" onclick="changePage(1)">Next »</button>
+
+          <div class="logs-container">
+            <table id="logs-table">
+              <tbody id="logs-body"></tbody>
+            </table>
+          </div>
+          
+          <div id="pagination-container" class="pagination-bar">
+            <button id="prev-page" onclick="changePage(-1)">« Prev</button>
+            <div id="page-numbers"></div>
+            <button id="next-page" onclick="changePage(1)">Next »</button>
+          </div>
         </div>
      
 

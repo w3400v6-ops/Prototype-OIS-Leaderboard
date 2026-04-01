@@ -270,12 +270,19 @@ body {
       background: #27ae60;
     }
 
+    .table-component {
+      border: 1px solid #eee;
+      border-radius: 12px;
+      overflow: hidden; /* Clips the corners of the tables */
+      background: white;
+      display: grid;
+    }
+
     .logs-container {
       max-height: 500px; /* Adjust based on your preference */
       overflow-y: auto;
       border: 1px solid #eee;
       border-bottom: none; /* Merges with pagination bar */
-      border-radius: 8px 8px 0 0;
       position: relative; /* Necessary for sticky headers */
     }
 
@@ -296,6 +303,7 @@ body {
     .logs-container::-webkit-scrollbar-thumb:hover {
       background: #bbb;
     }
+    
 
     #logs-table {
       width: 100%;
@@ -305,19 +313,24 @@ body {
       border-radius: 8px;
     }
 
-    #logs-table th, #logs-table td {
+    /* Header Styling */
+    #header-table {
+      background: #f8f9fa;
+    }
+
+    #header-table th {
+      padding: 12px;
+      text-align: left;
+      color: #666;
+      font-size: 0.85em;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    #logs-table td {
       padding: 12px;
       text-align: left;
       border-bottom: 1px solid #eee;
-    }
-
-    #logs-table th {
-      padding-top: 20px;
-      padding-bottom: 20px;
-      background-color: #f8f9fa;
-      font-size: 15px;
-      color: #666;
-      letter-spacing: 0.05em;
     }
 
     #logs-table tr:last-child td {
@@ -560,7 +573,7 @@ body {
     left: 15px;
   }
 
-   #logs-table th{
+   #header-table th{
     padding-top: 15px;
     padding-bottom: 15px;
     font-size: 12px;
