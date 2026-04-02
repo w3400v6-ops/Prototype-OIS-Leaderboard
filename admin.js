@@ -149,10 +149,14 @@ function updateScore() {
     const categorySelect = document.getElementById('category-select');
     const comment = document.getElementById('comment').value || "No comment provided"; // Handle empty comment
     const rankSelect = document.getElementById('ranking-select');
+    const submitBtn = document.getElementById('submit-btn');
     let category = categorySelect.value;
     let addedPoints = 0;
     let rankText = "";
     let eventType = "";
+
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = "Processing...";
 
     // Logic for Bad Behaviour
     if (category === "Bad Behaviour") {
@@ -227,7 +231,8 @@ function updateScore() {
         document.getElementById('ranking-select').selectedIndex = 0;
         document.getElementById('event-type-select').selectedIndex = 0;
         categorySelect.selectedIndex = 0;
-        toggleCustomCategory();
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = "Submit Update";
     }
     });
 }
