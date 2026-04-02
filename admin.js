@@ -302,22 +302,51 @@ function startLogsListener() {
   });
 }
 
+let searchTerm = "";
+
+function handleSearch() {
+    searchTerm = document.getElementById('log-search').value.toLowerCase().trim();
+    currentPage = 1; // Always go back to page 1 on search
+    renderLogTable();
+    renderPaginationControls();
+}
+
+function getFilteredLogs() {
+    if (!searchTerm) return totalLogsArray;
+
+    return totalLogsArray.filter(log => {
+        const searchableText = [
+            log.houseName,
+            log.category,
+            log.rankText,
+            log.comment,
+            log.adminEmail
+        ].join(' ').toLowerCase();
+
+        return searchableText.includes(searchTerm);
+    });
+}
+
+
 function renderLogTable() {
     const container = document.querySelector('.logs-container');
     if (container) {
         container.scrollTop = 0; // Reset scroll to top on page change
     }
 
-  const logsBody = document.getElementById('logs-body');
-  logsBody.innerHTML = "";
+    const logsBody = document.getElementById('logs-body');
+    logsBody.innerHTML = "";
 
-  // MATH: Calculate which 10 logs to show
-  // Page 1: 0 to 10 | Page 2: 10 to 20...
-  const start = (currentPage - 1) * logsPerPage;
-  const end = start + logsPerPage;
-  const visibleLogs = totalLogsArray.slice(start, end);
+    // USE FILTERED LOGS HERE
+    const filteredLogs = getFilteredLogs();
 
-  visibleLogs.forEach(log => {
+    // MATH: Calculate which 10 logs to show
+    // Page 1: 0 to 10 | Page 2: 10 to 20...
+    const start = (currentPage - 1) * logsPerPage;
+    const end = start + logsPerPage;
+    const visibleLogs = filteredLogs.slice(start, end);
+
+    visibleLogs.forEach(log => {
     const row = logsBody.insertRow();
     
     // Time Column
@@ -327,7 +356,7 @@ function renderLogTable() {
     const descCell = row.insertCell(1);
     const rankInfo = log.rankText ? `${log.rankText}` : "";
 
-    if (log.rankText === "Penalty")
+    if (log.rankText === "Penalty" || log.pointsAdded < 0)
         {
         descCell.innerHTML = `
             <span class="log-house">${log.houseName}</span> loses <span class="log-house">${Math.abs(log.pointsAdded)} points </span> for receiving a
@@ -358,26 +387,28 @@ function renderLogTable() {
 }
 
 function renderPaginationControls() {
-  const totalPages = Math.ceil(totalLogsArray.length / logsPerPage);
-  const pageNumbersDiv = document.getElementById('page-numbers');
-  pageNumbersDiv.innerHTML = "";
+    const filteredLogs = getFilteredLogs();
+    const totalPages = Math.ceil(filteredLogs.length / logsPerPage);
 
-  // Disable Prev/Next if at boundaries
-  document.getElementById('prev-page').disabled = (currentPage === 1);
-  document.getElementById('next-page').disabled = (currentPage === totalPages || totalPages === 0);
+    const pageNumbersDiv = document.getElementById('page-numbers');
+    pageNumbersDiv.innerHTML = "";
 
-  // Generate Number Buttons
-  for (let i = 1; i <= totalPages; i++) {
-    const btn = document.createElement('span');
-    btn.innerText = i;
-    btn.className = `page-num ${i === currentPage ? 'active' : ''}`;
-    btn.onclick = () => {
-      currentPage = i;
-      renderLogTable();
-      renderPaginationControls();
-    };
-    pageNumbersDiv.appendChild(btn);
-  }
+    // Disable Prev/Next if at boundaries
+    document.getElementById('prev-page').disabled = (currentPage === 1);
+    document.getElementById('next-page').disabled = (currentPage === totalPages || totalPages === 0);
+
+    // Generate Number Buttons
+    for (let i = 1; i <= totalPages; i++) {
+        const btn = document.createElement('span');
+        btn.innerText = i;
+        btn.className = `page-num ${i === currentPage ? 'active' : ''}`;
+        btn.onclick = () => {
+        currentPage = i;
+        renderLogTable();
+        renderPaginationControls();
+        };
+        pageNumbersDiv.appendChild(btn);
+    }
 }
 
 function changePage(direction) {

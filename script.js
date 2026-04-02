@@ -221,7 +221,7 @@ function renderHouseLogs(el, houseId) {
     }
 
     const html = [...filteredLogs].reverse().map(log => {
-        const isPenalty = log.rankText === 'Penalty';
+        const isPenalty = log.rankText === 'Penalty' || log.pointsAdded < 0;
         
         // 1. Logic for Custom Points (Empty RankText) or Standard Win
         let description;
