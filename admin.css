@@ -270,6 +270,43 @@ body {
       background: #27ae60;
     }
 
+    /* Search Bar Container */
+.search-wrapper {
+  display: flex;
+  align-items: center;
+  background: #f8f9fa;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 0px 15px;
+  margin-bottom: 15px; /* Creates space between search and the table */
+  transition: all 0.2s ease;
+}
+
+/* Changes border color when you click inside it */
+.search-wrapper:focus-within {
+  border-color: #0077ff;
+  background: #ffffff;
+  box-shadow: 0 0 0 3px rgba(0, 119, 255, 0.1);
+}
+
+.search-icon {
+  color: #a0aec0;
+  font-size: 0.9em;
+}
+
+.search-wrapper input {
+  border: none;
+  background: transparent;
+  outline: none;
+  width: 100%;
+  font-size: 0.9em;
+  color: #2d3748;
+}
+
+.search-wrapper input::placeholder {
+  color: #a0aec0;
+}
+
     .table-component {
       border: 1px solid #eee;
       border-radius: 12px;
