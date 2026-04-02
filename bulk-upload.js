@@ -3,6 +3,7 @@ async function handleBulkUpload() {
     const status = document.getElementById('upload-status');
     const errorLog = document.getElementById('error-log');
     const errorList = document.getElementById('error-list');
+    const uploadBtn = document.getElementById('upload-btn');
     
     if (!fileInput.files[0]) return alert("Please select a CSV file.");
 
@@ -10,6 +11,12 @@ async function handleBulkUpload() {
     status.style.color = "#333";
     errorLog.classList.add('hidden');
     errorList.innerHTML = "";
+
+    // 1. DISABLE THE BUTTON IMMEDIATELY
+    uploadBtn.disabled = true;
+    uploadBtn.innerHTML = "⏳ Uploading...";
+    uploadBtn.style.opacity = "0.5";
+    uploadBtn.style.cursor = "not-allowed";
 
     try {
         const housesSnapshot = await db.ref('Houses').once('value');
@@ -146,10 +153,18 @@ async function handleBulkUpload() {
                 status.innerHTML = `✅ Successfully uploaded ${successCount} entries!`;
                 status.style.color = "#22c55e";
                 fileInput.value = ""; 
+
+                uploadBtn.disabled = false;
+                uploadBtn.innerHTML = "Process CSV";
+                uploadBtn.style.opacity = "1";
+                uploadBtn.style.cursor = "pointer";
             }
         });
     } catch (err) {
         status.innerHTML = "❌ Critical Error: " + err.message;
+        uploadBtn.disabled = false;
+        uploadBtn.innerHTML = "Process CSV";
+        uploadBtn.style.opacity = "1";
     }
 }
 
