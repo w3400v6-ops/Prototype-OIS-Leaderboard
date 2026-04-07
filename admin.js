@@ -147,36 +147,45 @@ function updateScore() {
     const houseId = document.getElementById('house-select').value;
     const houseName = document.getElementById('house-select').options[document.getElementById('house-select').selectedIndex].text;
     const categorySelect = document.getElementById('category-select');
-    const comment = document.getElementById('comment').value || "No comment provided"; // Handle empty comment
+    const comment = document.getElementById('comment').value || "No comment provided";
     const rankSelect = document.getElementById('ranking-select');
     const submitBtn = document.getElementById('submit-btn');
+    
     let category = categorySelect.value;
     let addedPoints = 0;
     let rankText = "";
     let eventType = "";
+
+    // Helper function to reset button if validation fails
+    const handleError = (msg) => {
+        alert(msg);
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = "Submit Update";
+    };
 
     submitBtn.disabled = true;
     submitBtn.innerHTML = "Processing...";
 
     // Logic for Bad Behaviour
     if (category === "Bad Behaviour") {
-    const deduction = parseInt(document.getElementById('deduction-input').value);
-    if (isNaN(deduction) || deduction <= 0) return alert("Please enter a valid deduction amount.");
-    addedPoints = -deduction; // Turn into negative
-    rankText = "Penalty";
-    eventType = ""
+        const deduction = parseInt(document.getElementById('deduction-input').value);
+        if (isNaN(deduction) || deduction < 0 || deduction > 100) {
+            return handleError("Please enter a deduction between 0 and 100.");
+        }
+        addedPoints = -deduction;
+        rankText = "Penalty";
+        eventType = "";
     } 
     // Logic for Normal Scoring
     else {
-
         if (rankSelect.value === "Custom Point") {
-            // 🟢 Handle Custom Points
             const customVal = parseInt(document.getElementById('custom-point-input').value);
-            if (isNaN(customVal)) return alert("Please enter a valid number for custom points.");
+            if (isNaN(customVal) || customVal < 0 || customVal > 100) {
+                return handleError("Please enter custom points between 0 and 100.");
+            }
             addedPoints = customVal;
-            rankText = ""; // Empty string as requested
+            rankText = ""; 
         } else {
-            // Standard Ranking logic
             addedPoints = parseInt(rankSelect.value);
             rankText = rankSelect.options[rankSelect.selectedIndex].text.split(' - ')[0];
         }
@@ -186,11 +195,11 @@ function updateScore() {
         if (category === "Other") {
             category = document.getElementById('custom-category-input').value.trim();
         }
-        if (!eventType) return alert("Please select an Event Type.");
-        if (isNaN(addedPoints)) return alert("Please select a ranking.");
+        if (!eventType) return handleError("Please select an Event Type.");
+        if (isNaN(addedPoints)) return handleError("Please select a ranking.");
     }
 
-    if (!category || category === "") return alert("Category Required: Please select a category or enter a custom one under 'Other'.");
+    if (!category || category === "") return handleError("Category Required: Please select a category or enter a custom one under 'Other'.");
 
     const now = new Date();
     const fullTimestamp = `${now.toLocaleDateString()} ${now.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}`;
@@ -199,43 +208,49 @@ function updateScore() {
     const houseRef = db.ref(`Houses/${houseId}`);
 
     houseRef.child('score').transaction(current => {
-    oldScore = current || 0;
-    return oldScore + addedPoints;
-    }).then((result) => {
-    if(result.committed) {
-        db.ref('Logs').push().set({
-        fullDateTime: fullTimestamp,
-        unixTimestamp: firebase.database.ServerValue.TIMESTAMP,
-        rankText: rankText,
-        houseId: houseId, 
-        houseName: houseName,
-        previousPoints: oldScore, 
-        pointsAdded: addedPoints, 
-        newTotal: oldScore + addedPoints,
-        category: category, 
-        eventType: eventType,
-        comment: comment, 
-        adminEmail: auth.currentUser.email
-        });
-        
-        if (category === "Bad Behaviour") {
-        alert(`Success! deduct ${Math.abs(addedPoints)} points from ${houseName}`);
-        }
-        else
-        {
-        alert(`Success! added ${Math.abs(addedPoints)} points to ${houseName}`);
-        }
+        oldScore = current || 0;
+        return oldScore + addedPoints;
+    })
+    .then((result) => {
+        if(result.committed) {
+            db.ref('Logs').push().set({
+                fullDateTime: fullTimestamp,
+                unixTimestamp: firebase.database.ServerValue.TIMESTAMP,
+                rankText: rankText,
+                houseId: houseId, 
+                houseName: houseName,
+                previousPoints: oldScore, 
+                pointsAdded: addedPoints, 
+                newTotal: oldScore + addedPoints,
+                category: category, 
+                eventType: eventType,
+                comment: comment, 
+                adminEmail: auth.currentUser.email
+            });
+            
+            alert(category === "Bad Behaviour" ? 
+                `Success! deducted ${Math.abs(addedPoints)} points from ${houseName}` : 
+                `Success! added ${Math.abs(addedPoints)} points to ${houseName}`);
 
-        document.getElementById('comment').value = "";
-        document.getElementById('custom-category-input').value = "";
-        document.getElementById('ranking-select').selectedIndex = 0;
-        document.getElementById('event-type-select').selectedIndex = 0;
-        categorySelect.selectedIndex = 0;
+            // Clear inputs
+            document.getElementById('comment').value = "";
+            document.getElementById('custom-category-input').value = "";
+            document.getElementById('ranking-select').selectedIndex = 0;
+            document.getElementById('event-type-select').selectedIndex = 0;
+            categorySelect.selectedIndex = 0;
+        }
+    })
+    .catch((error) => {
+        console.error(error);
+        alert("Database error: " + error.message);
+    })
+    .finally(() => {
+        // This runs no matter what (Success OR Error)
         submitBtn.disabled = false;
         submitBtn.innerHTML = "Submit Update";
-    }
     });
 }
+
 
 function startLeaderboardListener() {
     const houseIds = ['red', 'blue', 'green', 'yellow'];
