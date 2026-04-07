@@ -169,8 +169,8 @@ function updateScore() {
     // Logic for Bad Behaviour
     if (category === "Bad Behaviour") {
         const deduction = parseInt(document.getElementById('deduction-input').value);
-        if (isNaN(deduction) || deduction < 0 || deduction > 100) {
-            return handleError("Please enter a deduction between 0 and 100.");
+        if (isNaN(deduction) || deduction <= 0 || deduction > 100) {
+            return handleError("Please enter a deduction between 1 and 100.");
         }
         addedPoints = -deduction;
         rankText = "Penalty";
@@ -180,8 +180,8 @@ function updateScore() {
     else {
         if (rankSelect.value === "Custom Point") {
             const customVal = parseInt(document.getElementById('custom-point-input').value);
-            if (isNaN(customVal) || customVal < 0 || customVal > 100) {
-                return handleError("Please enter custom points between 0 and 100.");
+            if (isNaN(customVal) || customVal <= 0 || customVal > 100) {
+                return handleError("Please enter custom points between 1 and 100.");
             }
             addedPoints = customVal;
             rankText = ""; 
@@ -206,6 +206,8 @@ function updateScore() {
     
     let oldScore = 0;
     const houseRef = db.ref(`Houses/${houseId}`);
+
+    if (isNaN(addedPoints) || addedPoints < -100 || addedPoints > 100) return handleError("The added points is invalid");
 
     houseRef.child('score').transaction(current => {
         oldScore = current || 0;
@@ -250,7 +252,6 @@ function updateScore() {
         submitBtn.innerHTML = "Submit Update";
     });
 }
-
 
 function startLeaderboardListener() {
     const houseIds = ['red', 'blue', 'green', 'yellow'];
