@@ -376,7 +376,7 @@ body {
       }
       /* 100%: Card "lands" in its new spot */
       100% {
-        transform: translateY(0) scale(1);
+        transform: translateY(0);
         z-index: 1;
         box-shadow: 0 4px 10px rgba(0,0,0,0.1);
       }
@@ -385,7 +385,7 @@ body {
 
     .house.moving-up {
       /* This connects the JS trigger to the keyframe */
-      animation: lift-and-slide 0.8s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+      animation: lift-and-slide 0.8s cubic-bezier(0.4, 0, 0.2, 1);
     }
 
     /* Ensure other cards slide smoothly out of the way */
