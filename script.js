@@ -168,10 +168,26 @@ function startLeaderboard() {
                 currentData[key] = data[key].score;
             });
 
-            // Initial Sort
+            // Intial sort
+            // 1. Sort elements by score for visual order
             const sorted = [...houseEls].sort((a, b) => data[b.dataset.house].score - data[a.dataset.house].score);
             sorted.forEach((el, i) => el.style.order = i);
-            sorted[0].classList.add('leader');
+
+            // 2. Find the highest score currently on the board
+            const highestScore = Math.max(...Object.values(data).map(h => h.score));
+
+            // 3. Apply 'leader' class to ANY house that has that highest score
+            houseEls.forEach(el => {
+                const houseScore = data[el.dataset.house].score;
+                
+                // Remove class first to reset
+                el.classList.remove('leader'); 
+                
+                // Add if it matches the top score
+                if (houseScore === highestScore && highestScore > 0) {
+                    el.classList.add('leader');
+                }
+            });
 
             initialized = true;
             return;
@@ -337,9 +353,11 @@ function animateScore(el, from, to) {
     requestAnimationFrame(step);
 }
 
-function animateCards(sortedEls) {
+function animateCards(sortedEls, data) { // 🟢 Added 'data' as an argument
     const firstPositions = new Map();
     houseEls.forEach(el => firstPositions.set(el, el.getBoundingClientRect().top));
+    
+    // Re-order the elements in the flex/grid container
     sortedEls.forEach((el, i) => el.style.order = i);
 
     requestAnimationFrame(() => {
@@ -364,7 +382,28 @@ function animateCards(sortedEls) {
                 }
             }
         });
-        houseEls.forEach(el => el.classList.remove('leader'));
-        sortedEls[0].classList.add('leader');
+
+        // --- 🟢 NEW TIE-LEADER LOGIC ---
+        
+        // 1. Get all scores from the data object
+        const scores = Object.values(data).map(h => h.score);
+        
+        // 2. Find the maximum score
+        const highestScore = Math.max(...scores);
+
+        // 3. Apply 'leader' class to everyone who matches that score
+        houseEls.forEach(el => {
+            const houseId = el.dataset.house;
+            const currentScore = data[houseId].score;
+
+            // Remove it first to reset the state
+            el.classList.remove('leader'); 
+
+            // Add it if they are tied for the top (and score is > 0)
+            if (currentScore === highestScore && highestScore > 0) {
+            el.classList.add('leader'); 
+                
+            }
+        });
     });
 }

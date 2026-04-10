@@ -283,12 +283,29 @@ function startLeaderboardListener() {
         `;
     });
 
-    const sorted = houseIds.slice().sort((a,b) => (data[b]?.score || 0) - (data[a]?.score || 0));
-    sorted.forEach((id, i) => {
-        document.getElementById(id).style.order = i;
-        document.getElementById(id).classList.remove('leader');
-    });
-    document.getElementById(sorted[0]).classList.add('leader');
+  // 1. Sort the house IDs by score
+        const sorted = houseIds.slice().sort((a,b) => (data[b]?.score || 0) - (data[a]?.score || 0));
+
+        // 2. Find the highest score currently in the data
+        const scores = Object.values(data).map(h => h.score || 0);
+        const highestScore = Math.max(...scores);
+
+        sorted.forEach((id, i) => {
+            const el = document.getElementById(id);
+            if (!el) return;
+
+            // Set the flex/grid visual order
+            el.style.order = i;
+
+            // 3. Remove leader class first to reset
+            el.classList.remove('leader');
+
+            // 4. Add leader class to ANY house tied for the highest score
+            // (Check highestScore > 0 so a reset board doesn't crown everyone)
+            if (data[id]?.score === highestScore && highestScore > 0) {
+                el.classList.add('leader');
+            }
+        });
     });
 }
 
