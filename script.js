@@ -317,22 +317,19 @@ function runTicker() {
         
 
         // Trigger animation
-        ticker.style.opacity = 0;
+        ticker.classList.remove('fade-ticker');
+        tickerText.classList.remove('should-scroll');
+        tickerText.style.transform = "translateX(0)";
+
+        void ticker.offsetWidth;  //FORCE REFLOW: This tells the browser "Reset the styles NOW"
+        tickerText.innerText = `${rank} in ${log.category}${logComment}`;
+        ticker.classList.add('fade-ticker');
+
         setTimeout(() => {
-            tickerText.innerText = `${rank} in ${log.category}${logComment}`;
-            ticker.classList.remove('fade-ticker');
-            ticker.classList.add('fade-ticker');
-            
-            setTimeout(() => {
-                if (tickerText.offsetWidth > ticker.offsetWidth) {
-                    tickerText.classList.add('should-scroll');
-                }
-            }, 100);
-
-                tickerText.classList.remove('should-scroll');
-            tickerText.style.transform = "translateX(0)"
-
-        }, 300);
+            if (tickerText.offsetWidth > ticker.offsetWidth) {
+                tickerText.classList.add('should-scroll');
+            }
+        }, 50);
 
         logIndices[houseId]++;
   });
