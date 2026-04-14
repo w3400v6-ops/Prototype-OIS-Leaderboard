@@ -398,14 +398,14 @@ function renderLogTable() {
         {
         descCell.innerHTML = `
             <span class="log-house">${log.houseName}</span> loses <span class="log-house">${Math.abs(log.pointsAdded)} points </span> for receiving a
-            <span class="log-house"> ${rankInfo}</span> due to <span class="log-house">${log.category}</span>. 
-            <br><small style="color:#888;">"${log.comment}" — ${log.adminEmail}</small>
+            <span class="log-house"> ${rankInfo}</span>. 
+            <br><small style="color:#888; white-space:pre-wrap;">"${log.comment}" — ${log.adminEmail}</small>
         `;
         }
         else if (!log.rankText || log.rankText === "") {
         descCell.innerHTML = `
             <span class="log-house">${log.houseName}</span> gains <span class="log-house">${Math.abs(log.pointsAdded)} points </span> in <span class="log-house">${log.category}</span>. 
-            <br><small style="color:#888;">"${log.comment}" — ${log.adminEmail}</small>
+            <br><small style="color:#888; white-space:pre-wrap;">"${log.comment}" — ${log.adminEmail}</small>
         `;
         }
         
@@ -413,7 +413,7 @@ function renderLogTable() {
         descCell.innerHTML = `
             <span class="log-house">${log.houseName}</span> gains <span class="log-house">${Math.abs(log.pointsAdded)} points </span> for winning
             <span class="log-house"> ${rankInfo}</span> in <span class="log-house">${log.category}</span>. 
-            <br><small style="color:#888;">"${log.comment}" — ${log.adminEmail}</small>
+            <br><small style="color:#888; white-space:pre-wrap;">"${log.comment}" — ${log.adminEmail}</small>
         `;
         }
     // Delete Icon Column
