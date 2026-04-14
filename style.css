@@ -205,7 +205,7 @@ body {
     }
 
     .log-reason {
-      white-space : pre-warp;
+      white-space : pre-wrap;
       font-size: 0.95em;
       color: #444;
       line-height: 1.4;
