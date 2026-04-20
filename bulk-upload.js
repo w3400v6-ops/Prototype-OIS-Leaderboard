@@ -37,51 +37,72 @@ async function handleBulkUpload() {
                 const validationErrors = [];
                 const readyToUpload = [];
 
-                // --- PASS 1: THE AUDITOR ---
+               // --- PASS 1: THE AUDITOR ---
                 rows.forEach((row, i) => {
                     const lineNumber = i + 2;
                     
-                    // 1. Format House Name (First letter Caps, rest lower)
                     let rawHouseName = row.House?.trim() || "";
                     const formattedHouseName = rawHouseName.charAt(0).toUpperCase() + rawHouseName.slice(1).toLowerCase();
-                    
                     const houseId = findHouseId(formattedHouseName);
-                    const addedPoints = parseInt(row.Points);
-                    const category = row.Category?.trim();
                     
-                    // 2. Rank Logic & Shorthand Mapping
+                    let category = row.Category?.trim() || "";
+                    let eventType = row.EventType?.trim() || "";
                     let rawRank = row.Rank?.toString().trim() || "";
-                    let rankText = rawRank;
+                    let addedPoints = parseInt(row.Points);
 
-                    const rankMap = {
-                        "1": "1st Place",
-                        "2": "2nd Place",
-                        "3": "3rd Place",
-                        "4": "4th Place"
-                    };
+                    // 1. Identify if this is a Penalty
+                    const isPenalty = 
+                        category.toLowerCase() === "penalty" || 
+                        eventType.toLowerCase() === "penalty" || 
+                        rawRank.toLowerCase() === "penalty" ||
+                        addedPoints < 0;
 
-                    // Convert numeric shorthand (1 -> 1st Place)
-                    if (rankMap[rawRank]) {
-                        rankText = rankMap[rawRank];
+                    let rankText = "";
+
+                    if (isPenalty) {
+                        category = "Penalty";
+                        eventType = "Penalty";
+                        rankText = "Penalty"; // Fixed: Capitalized to match validRanks
+                        if (!isNaN(addedPoints)) {
+                            addedPoints = -Math.abs(addedPoints);
+                        }
+                    } else {
+                        // 2. Map numeric shorthand (1 -> 1st Place)
+                        const rankMap = { "1": "1st Place", "2": "2nd Place", "3": "3rd Place", "4": "4th Place" };
+                        // If it's in the map, use the long version; otherwise, use the raw text
+                        rankText = rankMap[rawRank] || rawRank;
                     }
 
-                    // Force "Penalty" if points are negative
-                    if (addedPoints < 0) {
-                        rankText = "Penalty";
-                    }
-
-                    // 3. Allowed Final Values
+                    // 3. Validation Logic
                     const validRanks = ["1st Place", "2nd Place", "3rd Place", "4th Place", "Penalty"];
-
                     let rowError = "";
+
                     if (!rawHouseName) rowError = "Missing House name.";
                     else if (!houseId) rowError = `House "${formattedHouseName}" is not recognized.`;
                     else if (isNaN(addedPoints)) rowError = `Points must be a number.`;
-                    else if (addedPoints < -100 || addedPoints > 100) rowError = `Points must be between -100 and 100.`;
                     else if (!category) rowError = "Missing Category.";
-                    // Final check for rank validity
+                    // Fixed: Now rankText will be "1st Place" even if the user typed "1"
                     else if (!validRanks.includes(rankText)) {
-                        rowError = `Invalid Rank "${rawRank}". Use 1-4, "1st Place", etc. (or Penalty for negative points).`;
+                        rowError = `Invalid Rank "${rawRank}". Use 1-4 or 1st-4th Place.`;
+                    }
+
+                    // 4. Strict Scoring Rules (Only if NOT a penalty)
+                    if (!rowError && !isPenalty) {
+                        const type = eventType.toLowerCase();
+                        if (type === "individual") {
+                            if (rankText === "1st Place" && addedPoints !== 10) rowError = "Individual 1st must be 10 pts.";
+                            else if (rankText === "2nd Place" && addedPoints !== 7) rowError = "Individual 2nd must be 7 pts.";
+                            else if (rankText === "3rd Place" && addedPoints !== 5) rowError = "Individual 3rd must be 5 pts.";
+                            else if (rankText === "4th Place") rowError = "Individual events have no 4th place.";
+                        } 
+                        else if (type === "group") {
+                            if (rankText === "1st Place" && addedPoints !== 100) rowError = "Group 1st must be 100 pts.";
+                            else if (rankText === "2nd Place" && addedPoints !== 70) rowError = "Group 2nd must be 70 pts.";
+                            else if (rankText === "3rd Place" && addedPoints !== 50) rowError = "Group 3rd should be 50 pts.";
+                            else if (rankText === "4th Place" && addedPoints !== 20) rowError = "Group 4th must be 20 pts.";
+                        } else {
+                            rowError = "EventType must be 'Individual' or 'Group'.";
+                        }
                     }
 
                     if (rowError) {
@@ -92,8 +113,8 @@ async function handleBulkUpload() {
                             houseName: formattedHouseName,
                             addedPoints,
                             category,
-                            rankText: rankText.toLowerCase(), // This will now be "1st Place", "Penalty", etc.
-                            eventType: row.EventType || "",
+                            rankText: rankText, 
+                            eventType: eventType,
                             comment: row.Comment || ""
                         });
                     }
@@ -112,10 +133,13 @@ async function handleBulkUpload() {
                     });
                     
                     alert("No data was uploaded. Please fix the errors listed below and try again.");
-                    return; // STOP HERE
+                    
+                    // FIXED: Re-enable the button here before exiting!
+                    resetUploadButton(uploadBtn);
+                    return; 
                 }
 
-                // --- PASS 2: THE EXECUTOR (Only runs if 0 errors) ---
+                // --- PASS 2: THE EXECUTOR ---
                 status.innerHTML = `🚀 No errors found! Uploading ${readyToUpload.length} entries...`;
                 status.style.color = "#0077ff";
 
@@ -154,31 +178,42 @@ async function handleBulkUpload() {
                 status.style.color = "#22c55e";
                 fileInput.value = ""; 
 
-                uploadBtn.disabled = false;
-                uploadBtn.innerHTML = "Process CSV";
-                uploadBtn.style.opacity = "1";
-                uploadBtn.style.cursor = "pointer";
+                // FIXED: Re-enable the button after success
+                resetUploadButton(uploadBtn);
             }
         });
     } catch (err) {
         status.innerHTML = "❌ Critical Error: " + err.message;
-        uploadBtn.disabled = false;
-        uploadBtn.innerHTML = "Process CSV";
-        uploadBtn.style.opacity = "1";
+        resetUploadButton(uploadBtn);
     }
 }
 
+// Helper function to keep code clean
+function resetUploadButton(btn) {
+    btn.disabled = false;
+    btn.innerHTML = "Process CSV";
+    btn.style.opacity = "1";
+    btn.style.cursor = "pointer";
+}
+
 function downloadCSVTemplate() {
-    db.ref('Houses').once('value', snapshot => {
-        const houses = [];
-        snapshot.forEach(child => houses.push(child.val().name));
-        
-        // Added EventType and Rank to the headers
+
+        // CSV Headers
         let csvContent = "data:text/csv;charset=utf-8,House,Category,EventType,Rank,Points,Comment\n";
         
-        houses.forEach(name => {
-            csvContent += `${name},Badminton,Individual,1st place,10,Bulk Update\n`;
-        });
+        // 1. Example of an Individual Event (10 pts)
+       
+            csvContent += `Oceanus,Badminton,Individual,1,10,Singles Win\n`;
+        
+        
+        // 2. Example of a Group Event (100 pts)
+      
+            csvContent += `Gaia,Football,Group,1,100,Tournament Champions\n`;
+        
+
+        // 3. Example of a Penalty (Note: Points will be sanitized to negative automatically)
+      
+            csvContent += `Helios,Penalty,Penalty,Penalty,15,Late for event\n`;
 
         const encodedUri = encodeURI(csvContent);
         const link = document.createElement("a");
@@ -187,5 +222,5 @@ function downloadCSVTemplate() {
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
-    });
+    
 }

@@ -15,10 +15,10 @@ body {
       left: 0;
       width: 100%;
       height: 100%;
+      opacity: 20%;
       z-index: -1;
       background-image: url('prototype-bg.png');
       background-repeat: repeat;
-      opacity: 0.1;
       pointer-events: none; /* Allows you to click things 'through' the image */
     }
 
@@ -41,7 +41,8 @@ body {
     }
 
     /* 🟢 Hover State: Expand */
-    .admin-action-pill:hover {
+    .admin-action-pill:hover,
+    .admin-action-pill.expanded {
       display: grid;
       width: 300px;
       height: auto;
@@ -64,7 +65,8 @@ body {
     }
 
     /* Move icon left on hover */
-    .admin-action-pill:hover .pill-icon {
+    .admin-action-pill:hover .pill-icon,
+    .admin-action-pill.expanded .pill-icon {
       transform: translateX(-5px);
     }
 
@@ -75,23 +77,24 @@ body {
       flex-direction: column;
     }
 
-    .admin-action-pill:hover .pill-content {
+    .admin-action-pill:hover .pill-content,
+    .admin-action-pill.expanded .pill-content {
       opacity: 1;
       transition-delay: 0.2s; /* Wait for expansion to start */
     }
 
-    .admin-action-pill:not(:hover) .profile-header {
-      margin-bottom: 0px;
-      border-bottom: none;
-      padding-bottom: 0px;
-    }
+  .admin-action-pill:not(:hover):not(.expanded) .profile-header {
+    margin-bottom: 0px;
+    border-bottom: none;
+    padding-bottom: 0px;
+  }
 
-    .admin-action-pill:not(:hover) .pill-menu {
-      display: none; 
-    }
-    .admin-action-pill:not(:hover) .user-email{
-      display: none; 
-    }
+  .admin-action-pill:not(:hover):not(.expanded) .pill-menu {
+    display: none; 
+  }
+  .admin-action-pill:not(:hover):not(.expanded) .user-email{
+    display: none; 
+  }
 
     .profile-header {
       display: flex;
@@ -403,7 +406,7 @@ body {
 
     .pagination-bar button {
       width: auto; /* Overrides the 100% width from earlier */
-      padding: 8px 15px;
+      padding: 8px 8px;
       background: #eee;
       color: #333;
       border: 1px solid #ddd;
@@ -427,7 +430,7 @@ body {
     }
 
     .page-num {
-      padding: 8px 12px;
+      padding: 8px 8px;
       border: 1px solid #ddd;
       border-radius: 5px;
       cursor: pointer;
@@ -439,6 +442,14 @@ body {
       color: white;
       border-color: #0077ff;
       font-weight: bold;
+    }
+
+    .page-ellipsis {
+      padding: 8px 8px;
+      color: #a0aec0;
+      cursor: default;
+      display: flex;
+      align-items: center;
     }
 
 
@@ -600,7 +611,7 @@ body {
 
   /* Prevent iOS from zooming in when tapping inputs */
   input, select, textarea, button {
-    font-size: 14px !important;
+    font-size: 14px;
   }
 
   /* Back button fix: Move it to a more natural spot */
@@ -648,7 +659,8 @@ body {
       height: 35px;
     }
 
-    .admin-action-pill:hover{
+    .admin-action-pill:hover,
+    .admin-action-pill.expanded{
       width: 250px;
     }
 
@@ -656,10 +668,12 @@ body {
       min-width: 35px;
     }
 
-    .admin-action-pill:hover .pill-icon{
+    .admin-action-pill:hover .pill-icon,
+    .admin-action-pill.expanded .pill-icon{
       margin-left: 10px;
       margin-right: 10px;
     }
+
 
     .pill-icon svg{
       width: 18px;
@@ -675,6 +689,23 @@ body {
     }
 
     .page-num {
-      font-size: 0.85em
+      padding: 5px 5px;
+      font-size: 0.7em
+    }
+  
+   .pagination-bar button {
+     padding: 5px 5px;
+    font-size: 0.7em;
+     white-space: nowrap;
+    }
+  
+  .page-ellipsis {
+      padding: 2px 2px;
+    }
+
+     #page-numbers {
+      display: flex;
+      gap: 3px;
     }
 }
+

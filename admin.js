@@ -12,6 +12,7 @@ firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.database();
 
+
 const houseEls = Array.from(document.querySelectorAll('.house'))
 
 let eventTypeData = {}; // Global variable to store points from DB
@@ -99,7 +100,7 @@ function handleCategoryChange() {
     customContainer.classList.toggle('hidden', category !== "Other");
 
     // 2. Handle Deduction vs Normal Scoring
-    if (category === "Bad Behaviour") {
+    if (category === "Penalty") {
     scoringSection.classList.add('hidden');
     deductionSection.classList.remove('hidden');
     } else {
@@ -166,11 +167,11 @@ function updateScore() {
     submitBtn.disabled = true;
     submitBtn.innerHTML = "Processing...";
 
-    // Logic for Bad Behaviour
-    if (category === "Bad Behaviour") {
+    // Logic for Penalty
+    if (category === "Penalty") {
         const deduction = parseInt(document.getElementById('deduction-input').value);
-        if (isNaN(deduction) || deduction <= 0 || deduction > 100) {
-            return handleError("Please enter a deduction between 1 and 100.");
+        if (isNaN(deduction) || deduction < 0 || deduction > 100) {
+            return handleError("Please enter a deduction between 0 and 100.");
         }
         addedPoints = -deduction;
         rankText = "Penalty";
@@ -180,8 +181,8 @@ function updateScore() {
     else {
         if (rankSelect.value === "Custom Point") {
             const customVal = parseInt(document.getElementById('custom-point-input').value);
-            if (isNaN(customVal) || customVal <= 0 || customVal > 100) {
-                return handleError("Please enter custom points between 1 and 100.");
+            if (isNaN(customVal) || customVal < 0 || customVal > 100) {
+                return handleError("Please enter custom points between 0 and 100.");
             }
             addedPoints = customVal;
             rankText = ""; 
@@ -207,8 +208,6 @@ function updateScore() {
     let oldScore = 0;
     const houseRef = db.ref(`Houses/${houseId}`);
 
-    if (isNaN(addedPoints) || addedPoints < -100 || addedPoints > 100) return handleError("The added points is invalid");
-
     houseRef.child('score').transaction(current => {
         oldScore = current || 0;
         return oldScore + addedPoints;
@@ -230,7 +229,7 @@ function updateScore() {
                 adminEmail: auth.currentUser.email
             });
             
-            alert(category === "Bad Behaviour" ? 
+            alert(category === "Penalty" ? 
                 `Success! deducted ${Math.abs(addedPoints)} points from ${houseName}` : 
                 `Success! added ${Math.abs(addedPoints)} points to ${houseName}`);
 
@@ -283,7 +282,7 @@ function startLeaderboardListener() {
         `;
     });
 
-  // 1. Sort the house IDs by score
+        // 1. Sort the house IDs by score
         const sorted = houseIds.slice().sort((a,b) => (data[b]?.score || 0) - (data[a]?.score || 0));
 
         // 2. Find the highest score currently in the data
@@ -365,7 +364,6 @@ function getFilteredLogs() {
     });
 }
 
-
 function renderLogTable() {
     const container = document.querySelector('.logs-container');
     if (container) {
@@ -394,7 +392,7 @@ function renderLogTable() {
     const descCell = row.insertCell(1);
     const rankInfo = log.rankText ? `${log.rankText}` : "";
 
-    if (log.rankText === "Penalty" || log.pointsAdded < 0)
+     if (log.rankText === "Penalty" || log.pointsAdded < 0)
         {
         descCell.innerHTML = `
             <span class="log-house">${log.houseName}</span> loses <span class="log-house">${Math.abs(log.pointsAdded)} points </span> for receiving a
@@ -425,28 +423,59 @@ function renderLogTable() {
 }
 
 function renderPaginationControls() {
-    const filteredLogs = getFilteredLogs();
-    const totalPages = Math.ceil(filteredLogs.length / logsPerPage);
+  const filteredLogs = getFilteredLogs();
+  const totalPages = Math.ceil(filteredLogs.length / logsPerPage);
+  
+  const pageNumbersDiv = document.getElementById('page-numbers');
+  pageNumbersDiv.innerHTML = "";
 
-    const pageNumbersDiv = document.getElementById('page-numbers');
-    pageNumbersDiv.innerHTML = "";
+  // Disable Prev/Next buttons at boundaries
+  document.getElementById('prev-page').disabled = (currentPage === 1);
+  document.getElementById('next-page').disabled = (currentPage === totalPages || totalPages === 0);
 
-    // Disable Prev/Next if at boundaries
-    document.getElementById('prev-page').disabled = (currentPage === 1);
-    document.getElementById('next-page').disabled = (currentPage === totalPages || totalPages === 0);
+  // If there is only 1 or 0 pages, don't show numbers
+  if (totalPages <= 1) return;
 
-    // Generate Number Buttons
-    for (let i = 1; i <= totalPages; i++) {
-        const btn = document.createElement('span');
-        btn.innerText = i;
-        btn.className = `page-num ${i === currentPage ? 'active' : ''}`;
-        btn.onclick = () => {
-        currentPage = i;
+  const pages = [];
+
+  // --- SLIDING WINDOW LOGIC ---
+  if (totalPages <= 7) {
+    // If we have 7 or fewer pages, just show them all
+    for (let i = 1; i <= totalPages; i++) pages.push(i);
+  } else {
+    // More than 7 pages? Time to truncate with "..."
+    
+    if (currentPage <= 4) {
+      // Near the start: show 1 2 3 4 5 ... [Last]
+      pages.push(1, 2, 3, 4, 5, '...', totalPages);
+    } else if (currentPage >= totalPages - 3) {
+      // Near the end: show [1] ... 16 17 18 19 20
+      pages.push(1, '...', totalPages - 4, totalPages - 3, totalPages - 2, totalPages - 1, totalPages);
+    } else {
+      // In the middle: show [1] ... 9 [10] 11 ... [20]
+      pages.push(1, '...', currentPage - 2,  currentPage - 1, currentPage, currentPage + 1, currentPage + 2,  '...', totalPages);
+    }
+  }
+
+  // --- RENDER THE BUTTONS ---
+  pages.forEach(p => {
+    if (p === '...') {
+      const span = document.createElement('span');
+      span.innerText = '...';
+      span.className = 'page-ellipsis';
+      pageNumbersDiv.appendChild(span);
+    } else {
+      const btn = document.createElement('span');
+      btn.innerText = p;
+      btn.className = `page-num ${p === currentPage ? 'active' : ''}`;
+      btn.onclick = () => {
+        currentPage = p;
         renderLogTable();
         renderPaginationControls();
-        };
-        pageNumbersDiv.appendChild(btn);
+      };
+      pageNumbersDiv.appendChild(btn);
     }
+  });
 }
 
 function changePage(direction) {
@@ -614,4 +643,27 @@ logoutBtn.addEventListener('click', () => {
             console.error("Logout Error:", error);
         });
     }
+});
+
+document.addEventListener('DOMContentLoaded', () => {
+  const pill = document.querySelector('.admin-action-pill');
+
+  pill.addEventListener('click', function(e) {
+    // Only intercept if we are on a touch device 
+    // This prevents double-triggering on desktop
+    if (window.matchMedia("(pointer: coarse)").matches) {
+      // If clicking the row links, let them work
+      if (e.target.closest('.action-row')) return;
+      
+      e.preventDefault();
+      this.classList.toggle('expanded');
+    }
+  });
+
+  // Close pill when clicking outside
+  document.addEventListener('click', (e) => {
+    if (!pill.contains(e.target)) {
+      pill.classList.remove('expanded');
+    }
+  });
 });
