@@ -13,6 +13,7 @@ const app = firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 const auth = firebase.auth();
 const provider = new firebase.auth.GoogleAuthProvider();
+const analytics = firebase.analytics();
 
 // Forces the login picker to only show your school domain accounts
 provider.setCustomParameters({ hd: "oakbridge.edu.my" }); 
@@ -29,10 +30,12 @@ const errorMsg = document.getElementById('error-msg');
 // 2. Global Logs Listener (Pre-renders data)
 db.ref("Logs").on("value", (snap) => {
     allLogs = snap.val() || {};
+    
     // Refresh logs for every house immediately so they are ready before the click
     houseEls.forEach(el => {
         if (el.querySelector('.log-container')) {
             renderHouseLogs(el, el.dataset.house);
+            refreshSidebarLogs();
         }
     });
 });
@@ -168,7 +171,7 @@ function startLeaderboard() {
                 currentData[key] = data[key].score;
             });
 
-            // Intial sort
+             // Intial sort
             // 1. Sort elements by score for visual order
             const sorted = [...houseEls].sort((a, b) => data[b.dataset.house].score - data[a.dataset.house].score);
             sorted.forEach((el, i) => el.style.order = i);
@@ -215,7 +218,7 @@ function startLeaderboard() {
         if (needsReorder) {
             setTimeout(() => {
                 const sorted = [...houseEls].sort((a, b) => data[b.dataset.house].score - data[a.dataset.house].score);
-                animateCards(sorted);
+                animateCards(sorted, data);
                 setTimeout(() => {
                     if (activeHouseEl) activeHouseEl.classList.remove('updating');
                 }, 600);
@@ -225,7 +228,7 @@ function startLeaderboard() {
 }
 
 
-// 6. Log Rendering (The Logic you provided)
+// 6. Log Rendering
 function renderHouseLogs(el, houseId) {
     const container = el.querySelector('.log-container');
     if (!container) return;
@@ -260,8 +263,8 @@ function renderHouseLogs(el, houseId) {
         const pointsDisplay = isPenalty ? `${log.pointsAdded}` : `+${log.pointsAdded}`;
 
         return `
-            <div class="log-item" style="display: flex; justify-content: space-between; padding: 12px 20px; border-bottom: 1px solid #f0f0f0;">
-                <div class="log-reason" style="color: #333;">${description}${commentText}</div>
+            <div class="log-item">
+                <div class="log-reason">${description}${commentText}</div>
                 <div class="${isPenalty ? 'log-points-negative' : 'log-points'}" style="font-weight:bold; color:${isPenalty ? '#e74c3c' : '#2ecc71'}">
                     ${pointsDisplay}
                 </div>
@@ -320,7 +323,16 @@ function runTicker() {
         tickerText.style.transform = "translateX(0)";
 
         void ticker.offsetWidth;  //FORCE REFLOW: This tells the browser "Reset the styles NOW"
-        tickerText.innerText = `${rank} in ${log.category}${logComment}`;
+
+        const isPenalty = log.rankText === 'Penalty' || log.pointsAdded < 0;
+        
+        if (isPenalty) {
+            tickerText.innerText = `${rank}${logComment}`;
+        }
+        else{
+            tickerText.innerText = `${rank} in ${log.category}${logComment}`;
+        }
+        
         ticker.classList.add('fade-ticker');
 
         setTimeout(() => {
@@ -402,3 +414,28 @@ function animateCards(sortedEls, data) { // 🟢 Added 'data' as an argument
         });
     });
 }
+
+
+// Button for IOS
+document.addEventListener('DOMContentLoaded', () => {
+  const pill = document.querySelector('.admin-action-pill');
+
+  pill.addEventListener('click', function(e) {
+    // Only intercept if we are on a touch device 
+    // This prevents double-triggering on desktop
+    if (window.matchMedia("(pointer: coarse)").matches) {
+      // If clicking the row links, let them work
+      if (e.target.closest('.action-row')) return;
+      
+      e.preventDefault();
+      this.classList.toggle('expanded');
+    }
+  });
+
+  // Close pill when clicking outside
+  document.addEventListener('click', (e) => {
+    if (!pill.contains(e.target)) {
+      pill.classList.remove('expanded');
+    }
+  });
+});
