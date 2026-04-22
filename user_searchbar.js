@@ -18,11 +18,13 @@ searchInput.addEventListener('input', (e) => {
     filteredLogsGlobal = Object.values(allLogs)
         .reverse()
         .filter(log => {
+            const isPlaceholder = !log.comment || log.comment === "No comment provided";
+
             const searchableText = [
                 log.houseName,
                 log.category,
                 log.rankText,
-                log.comment
+                isPlaceholder ? "" : log.comment
             ].join(' ').toLowerCase();
             return searchableText.includes(query);
         });
