@@ -90,18 +90,15 @@ async function handleBulkUpload() {
                     if (!rowError && !isPenalty) {
                         const type = eventType.toLowerCase();
                         if (type === "individual") {
-                            if (rankText === "1st Place" && addedPoints !== 10) rowError = "Individual 1st must be 10 pts.";
-                            else if (rankText === "2nd Place" && addedPoints !== 7) rowError = "Individual 2nd must be 7 pts.";
-                            else if (rankText === "3rd Place" && addedPoints !== 5) rowError = "Individual 3rd must be 5 pts.";
-                            else if (rankText === "4th Place") rowError = "Individual events have no 4th place.";
+                            if (rankText === "1st Place") finalPoints = 10;
+                            else if (rankText === "2nd Place") finalPoints = 7;
+                            else if (rankText === "3rd Place") finalPoints = 5;
                         } 
                         else if (type === "group") {
-                            if (rankText === "1st Place" && addedPoints !== 100) rowError = "Group 1st must be 100 pts.";
-                            else if (rankText === "2nd Place" && addedPoints !== 70) rowError = "Group 2nd must be 70 pts.";
-                            else if (rankText === "3rd Place" && addedPoints !== 50) rowError = "Group 3rd should be 50 pts.";
-                            else if (rankText === "4th Place" && addedPoints !== 20) rowError = "Group 4th must be 20 pts.";
-                        } else {
-                            rowError = "EventType must be 'Individual' or 'Group'.";
+                            if (rankText === "1st Place") finalPoints = 100;
+                            else if (rankText === "2nd Place") finalPoints = 70;
+                            else if (rankText === "3rd Place") finalPoints = 50;
+                            else if (rankText === "4th Place") finalPoints = 20;
                         }
                     }
 
@@ -111,7 +108,7 @@ async function handleBulkUpload() {
                         readyToUpload.push({
                             houseId,
                             houseName: formattedHouseName,
-                            addedPoints,
+                            addedPoints: finalPoints,
                             category,
                             rankText: rankText, 
                             eventType: eventType,
@@ -139,46 +136,59 @@ async function handleBulkUpload() {
                     return; 
                 }
 
-                // --- PASS 2: THE EXECUTOR ---
-                status.innerHTML = `🚀 No errors found! Uploading ${readyToUpload.length} entries...`;
+                // --- PASS 2: THE EXECUTOR (Atomic Update) ---
+                status.innerHTML = `No errors found! Preparing bulk upload...`;
                 status.style.color = "#0077ff";
 
-                let successCount = 0;
-                for (const item of readyToUpload) {
-                    try {
-                        const houseRef = db.ref(`Houses/${item.houseId}/score`);
-                        const result = await houseRef.transaction(curr => (curr || 0) + item.addedPoints);
-
-                        if (result.committed) {
-                            const newScore = result.snapshot.val();
-                            const oldScore = newScore - item.addedPoints;
-                            
-                            await db.ref('Logs').push().set({
-                                fullDateTime: new Date().toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' }),
-                                unixTimestamp: firebase.database.ServerValue.TIMESTAMP,
-                                rankText: item.rankText,
-                                houseId: item.houseId,
-                                houseName: item.houseName,
-                                previousPoints: oldScore,
-                                pointsAdded: item.addedPoints,
-                                newTotal: newScore,
-                                category: item.category,
-                                eventType: item.eventType,
-                                comment: item.comment,
-                                adminEmail: auth.currentUser.email
-                            });
-                            successCount++;
-                        }
-                    } catch (e) {
-                        console.error("Database error during upload:", e);
-                    }
+                const updates = {};
+                const currentHouseScores = {}; // To track point changes locally before sending
+                
+                // Clone the initial scores from housesData
+                for (let id in housesData) {
+                    currentHouseScores[id] = housesData[id].score || 0;
                 }
 
-                status.innerHTML = `✅ Successfully uploaded ${successCount} entries!`;
-                status.style.color = "#22c55e";
-                fileInput.value = ""; 
+                readyToUpload.forEach(item => {
+                    // 1. Calculate the New Score
+                    const oldScore = currentHouseScores[item.houseId];
+                    const newScore = oldScore + item.addedPoints;
+                    
+                    // Update our local tracker so the next row for the same house is accurate
+                    currentHouseScores[item.houseId] = newScore;
 
-                // FIXED: Re-enable the button after success
+                    // 2. Add Score Update to the batch
+                    updates[`Houses/${item.houseId}/score`] = newScore;
+
+                    // 3. Add Log Entry to the batch
+                    const newLogKey = db.ref('Logs').push().key;
+                    updates[`Logs/${newLogKey}`] = {
+                        fullDateTime: new Date().toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' }),
+                        unixTimestamp: firebase.database.ServerValue.TIMESTAMP,
+                        rankText: item.rankText,
+                        houseId: item.houseId,
+                        houseName: item.houseName,
+                        previousPoints: oldScore,
+                        pointsAdded: item.addedPoints,
+                        newTotal: newScore,
+                        category: item.category,
+                        eventType: item.eventType,
+                        comment: item.comment,
+                        adminEmail: auth.currentUser.email
+                    };
+                });
+
+                try {
+                    // SEND EVERYTHING AT ONCE
+                    await db.ref().update(updates);
+                    
+                    status.innerHTML = `✅ Successfully uploaded all ${readyToUpload.length} entries!`;
+                    status.style.color = "#22c55e";
+                    fileInput.value = ""; 
+                } catch (e) {
+                    console.error("Atomic Update Failed:", e);
+                    status.innerHTML = "❌ Upload Failed: Database connection lost.";
+                }
+
                 resetUploadButton(uploadBtn);
             }
         });
@@ -201,18 +211,11 @@ function downloadCSVTemplate() {
         // CSV Headers
         let csvContent = "data:text/csv;charset=utf-8,House,Category,EventType,Rank,Points,Comment\n";
         
-        // 1. Example of an Individual Event (10 pts)
-       
-            csvContent += `Oceanus,Badminton,Individual,1,10,Singles Win\n`;
-        
-        
-        // 2. Example of a Group Event (100 pts)
-      
+        // 1. Example of an Individual Event (10 pts)      
+            csvContent += `Oceanus,Badminton,Individual,1,10,Singles Win\n`;       
+        // 2. Example of a Group Event (100 pts)     
             csvContent += `Gaia,Football,Group,1,100,Tournament Champions\n`;
-        
-
         // 3. Example of a Penalty (Note: Points will be sanitized to negative automatically)
-      
             csvContent += `Helios,Penalty,Penalty,Penalty,15,Late for event\n`;
 
         const encodedUri = encodeURI(csvContent);

@@ -198,7 +198,7 @@ function startLeaderboard() {
 
         // 🟢 Live Update Re-ordering Logic
         let needsReorder = false;
-        let activeHouseEl = null;
+        let updatingHouses = [];
 
         houseEls.forEach(el => {
             const key = el.dataset.house;
@@ -208,7 +208,7 @@ function startLeaderboard() {
 
             if (oldScore !== newScore) {
                 needsReorder = true;
-                activeHouseEl = el;
+                updatingHouses.push(el);
                 el.classList.add('updating');
                 animateScore(scoreEl, oldScore, newScore);
                 currentData[key] = newScore;
@@ -220,7 +220,7 @@ function startLeaderboard() {
                 const sorted = [...houseEls].sort((a, b) => data[b.dataset.house].score - data[a.dataset.house].score);
                 animateCards(sorted, data);
                 setTimeout(() => {
-                    if (activeHouseEl) activeHouseEl.classList.remove('updating');
+                    updatingHouses.forEach(el => el.classList.remove('updating'));
                 }, 600);
             }, 100);
         }
