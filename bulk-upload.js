@@ -1,211 +1,293 @@
 async function handleBulkUpload() {
     const fileInput = document.getElementById('csv-file');
+    const uploadBtn = document.getElementById('upload-btn');
     const status = document.getElementById('upload-status');
     const errorLog = document.getElementById('error-log');
     const errorList = document.getElementById('error-list');
-    const uploadBtn = document.getElementById('upload-btn');
-    
-    if (!fileInput.files[0]) return alert("Please select a CSV file.");
 
-    status.innerHTML = "⏳ Auditing file for errors...";
+    if (!fileInput.files[0]) return alert("Please select a file.");
+
+    const file = fileInput.files[0];
+    const isExcel = file.name.endsWith('.xlsx') || file.name.endsWith('.xls');
+
+    // UI Reset
+    status.innerHTML = "⏳ Processing file...";
     status.style.color = "#333";
     errorLog.classList.add('hidden');
     errorList.innerHTML = "";
-
-    // 1. DISABLE THE BUTTON IMMEDIATELY
+    
     uploadBtn.disabled = true;
-    uploadBtn.innerHTML = "⏳ Uploading...";
+    uploadBtn.innerHTML = "⏳ Processing...";
     uploadBtn.style.opacity = "0.5";
-    uploadBtn.style.cursor = "not-allowed";
+
+    if (isExcel) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            const data = new Uint8Array(e.target.result);
+            const workbook = XLSX.read(data, { type: 'array' });
+            const sheet = workbook.Sheets[workbook.SheetNames[0]];
+            // Read as raw array of arrays to handle custom report headers
+            const rawData = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+            processRows(rawData); 
+        };
+        reader.readAsArrayBuffer(file);
+    } else {
+        // Standard CSV processing
+        Papa.parse(file, {
+            header: true,
+            skipEmptyLines: true,
+            complete: (results) => {
+                // Check if it's the raw array style or object style
+                processRows(results.data);
+            }
+        });
+    }
+}
+
+async function processRows(data) {
+    const status = document.getElementById('upload-status');
+    const uploadBtn = document.getElementById('upload-btn');
+    const errorLog = document.getElementById('error-log');
+    const errorList = document.getElementById('error-list');
+    const fileInput = document.getElementById('csv-file');
 
     try {
         const housesSnapshot = await db.ref('Houses').once('value');
         const housesData = housesSnapshot.val();
+        let readyToUpload = [];
 
-        const findHouseId = (name) => {
-            for (let id in housesData) {
-                if (housesData[id].name.toLowerCase().trim() === (name || "").toLowerCase().trim()) return id;
+        // --- DETECTION LOGIC ---
+        // Determine if we are looking at a School Report or a Standard Template
+        const isReportFormat = data.some(row => Array.isArray(row) && row.includes("Student Name"));
+        const isStandardCSV = !isReportFormat && data[0] && data[0].hasOwnProperty("House");
+
+        if (isReportFormat) {
+            status.innerHTML = "Mode: School Report Detected";
+            readyToUpload = parseSchoolReport(data);
+        } else if (isStandardCSV) {
+            status.innerHTML = "Mode: Standard Template Detected";
+            const result = parseStandardTemplate(data, housesData);
+            if (result.errors.length > 0) {
+                showErrors(result.errors);
+                return resetUploadButton(uploadBtn);
             }
-            return null;
-        };
+            readyToUpload = result.data;
+        } else {
+            status.innerHTML = "❌ Error: Unrecognized file format.";
+            return resetUploadButton(uploadBtn);
+        }
 
-        Papa.parse(fileInput.files[0], {
-            header: true,
-            skipEmptyLines: true,
-            complete: async function(results) {
-                const rows = results.data;
-                const validationErrors = [];
-                const readyToUpload = [];
+        if (readyToUpload.length === 0) {
+            status.innerHTML = "❌ No valid data found to upload.";
+            return resetUploadButton(uploadBtn);
+        }
 
-               // --- PASS 1: THE AUDITOR ---
-                rows.forEach((row, i) => {
-                    const lineNumber = i + 2;
-                    
-                    let rawHouseName = row.House?.trim() || "";
-                    const formattedHouseName = rawHouseName.charAt(0).toUpperCase() + rawHouseName.slice(1).toLowerCase();
-                    const houseId = findHouseId(formattedHouseName);
-                    
-                    let category = row.Category?.trim() || "";
-                    let eventType = row.EventType?.trim() || "";
-                    let rawRank = row.Rank?.toString().trim() || "";
-                    let addedPoints = parseInt(row.Points);
+        // --- ATOMIC EXECUTION ---
+        await executeAtomicUpload(readyToUpload, housesData);
+        status.innerHTML = `✅ Successfully uploaded ${readyToUpload.length} entries!`;
+        status.style.color = "#22c55e";
+        fileInput.value = ""; // Reset file input
 
-                    // 1. Identify if this is a Penalty
-                    const isPenalty = 
-                        category.toLowerCase() === "penalty" || 
-                        eventType.toLowerCase() === "penalty" || 
-                        rawRank.toLowerCase() === "penalty" ||
-                        addedPoints < 0;
-
-                    let rankText = "";
-
-                    if (isPenalty) {
-                        category = "Penalty";
-                        eventType = "Penalty";
-                        rankText = "Penalty"; // Fixed: Capitalized to match validRanks
-                        if (!isNaN(addedPoints)) {
-                            addedPoints = -Math.abs(addedPoints);
-                        }
-                    } else {
-                        // 2. Map numeric shorthand (1 -> 1st Place)
-                        const rankMap = { "1": "1st Place", "2": "2nd Place", "3": "3rd Place", "4": "4th Place" };
-                        // If it's in the map, use the long version; otherwise, use the raw text
-                        rankText = rankMap[rawRank] || rawRank;
-                    }
-
-                    // 3. Validation Logic
-                    const validRanks = ["1st Place", "2nd Place", "3rd Place", "4th Place", "Penalty"];
-                    let rowError = "";
-
-                    if (!rawHouseName) rowError = "Missing House name.";
-                    else if (!houseId) rowError = `House "${formattedHouseName}" is not recognized.`;
-                    else if (isNaN(addedPoints)) rowError = `Points must be a number.`;
-                    else if (!category) rowError = "Missing Category.";
-                    // Fixed: Now rankText will be "1st Place" even if the user typed "1"
-                    else if (!validRanks.includes(rankText)) {
-                        rowError = `Invalid Rank "${rawRank}". Use 1-4 or 1st-4th Place.`;
-                    }
-
-                    // 4. Strict Scoring Rules (Only if NOT a penalty)
-                    if (!rowError && !isPenalty) {
-                        const type = eventType.toLowerCase();
-                        if (type === "individual") {
-                            if (rankText === "1st Place") finalPoints = 10;
-                            else if (rankText === "2nd Place") finalPoints = 7;
-                            else if (rankText === "3rd Place") finalPoints = 5;
-                        } 
-                        else if (type === "group") {
-                            if (rankText === "1st Place") finalPoints = 100;
-                            else if (rankText === "2nd Place") finalPoints = 70;
-                            else if (rankText === "3rd Place") finalPoints = 50;
-                            else if (rankText === "4th Place") finalPoints = 20;
-                        }
-                    }
-
-                    if (rowError) {
-                        validationErrors.push(`Line ${lineNumber}: ${rowError}`);
-                    } else {
-                        readyToUpload.push({
-                            houseId,
-                            houseName: formattedHouseName,
-                            addedPoints: finalPoints,
-                            category,
-                            rankText: rankText, 
-                            eventType: eventType,
-                            comment: row.Comment || ""
-                        });
-                    }
-                });
-
-                // --- DECISION POINT ---
-                if (validationErrors.length > 0) {
-                    status.innerHTML = "❌ Upload Cancelled: Errors Found";
-                    status.style.color = "#ef4444";
-                    errorLog.classList.remove('hidden');
-                    
-                    validationErrors.forEach(msg => {
-                        const li = document.createElement('li');
-                        li.innerText = msg;
-                        errorList.appendChild(li);
-                    });
-                    
-                    alert("No data was uploaded. Please fix the errors listed below and try again.");
-                    
-                    // FIXED: Re-enable the button here before exiting!
-                    resetUploadButton(uploadBtn);
-                    return; 
-                }
-
-                // --- PASS 2: THE EXECUTOR (Atomic Update) ---
-                status.innerHTML = `No errors found! Preparing bulk upload...`;
-                status.style.color = "#0077ff";
-
-                const updates = {};
-                const currentHouseScores = {}; // To track point changes locally before sending
-                
-                // Clone the initial scores from housesData
-                for (let id in housesData) {
-                    currentHouseScores[id] = housesData[id].score || 0;
-                }
-
-                readyToUpload.forEach(item => {
-                    // 1. Calculate the New Score
-                    const oldScore = currentHouseScores[item.houseId];
-                    const newScore = oldScore + item.addedPoints;
-                    
-                    // Update our local tracker so the next row for the same house is accurate
-                    currentHouseScores[item.houseId] = newScore;
-
-                    // 2. Add Score Update to the batch
-                    updates[`Houses/${item.houseId}/score`] = newScore;
-
-                    // 3. Add Log Entry to the batch
-                    const newLogKey = db.ref('Logs').push().key;
-                    updates[`Logs/${newLogKey}`] = {
-                        fullDateTime: new Date().toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' }),
-                        unixTimestamp: firebase.database.ServerValue.TIMESTAMP,
-                        rankText: item.rankText,
-                        houseId: item.houseId,
-                        houseName: item.houseName,
-                        previousPoints: oldScore,
-                        pointsAdded: item.addedPoints,
-                        newTotal: newScore,
-                        category: item.category,
-                        eventType: item.eventType,
-                        comment: item.comment,
-                        adminEmail: auth.currentUser.email
-                    };
-                });
-
-                try {
-                    // SEND EVERYTHING AT ONCE
-                    await db.ref().update(updates);
-                    
-                    status.innerHTML = `✅ Successfully uploaded all ${readyToUpload.length} entries!`;
-                    status.style.color = "#22c55e";
-                    fileInput.value = ""; 
-                } catch (e) {
-                    console.error("Atomic Update Failed:", e);
-                    status.innerHTML = "❌ Upload Failed: Database connection lost.";
-                }
-
-                resetUploadButton(uploadBtn);
-            }
-        });
     } catch (err) {
+        console.error(err);
         status.innerHTML = "❌ Critical Error: " + err.message;
-        resetUploadButton(uploadBtn);
     }
+    resetUploadButton(uploadBtn);
 }
 
-// Helper function to keep code clean
+// --- PARSER 1: SCHOOL REPORT ---
+function parseSchoolReport(data) {
+    let grade = "7.1";
+    let headerRowIndex = -1;
+    let headers = [];
+
+    for (let i = 0; i < data.length; i++) {
+        const rowString = data[i].join(" ");
+        if (rowString.includes("Grade")) {
+            const match = rowString.match(/Grade\s*:\s*([\d.]+)/i);
+            if (match) grade = match[1];
+        }
+        if (data[i].includes("Student Name")) {
+            headerRowIndex = i;
+            headers = data[i];
+            break;
+        }
+    }
+
+    if (headerRowIndex === -1) return [];
+
+    const studentData = [];
+    for (let i = headerRowIndex + 1; i < data.length; i++) {
+        const firstCell = String(data[i][0] || "");
+        if (firstCell.includes("Exam Details") || firstCell.includes("Report Generated")) break;
+        
+        let obj = {};
+        headers.forEach((h, idx) => { if (h) obj[h] = data[i][idx]; });
+        if (obj["Student Name"]) studentData.push(obj);
+    }
+
+    const subjects = [
+        { key: "Bahasa", cleanName: "BM Assessment Test 1" },
+        { key: "Mathematics", cleanName: "Mathematic Assessment Test 1" },
+        { key: "Biology", cleanName: "Biology Assessment Test 1" },
+        { key: "English", cleanName: "English Assessment Test 1" }
+    ];
+
+    const results = [];
+    subjects.forEach(sub => {
+        const actualKey = headers.find(h => h && h.toLowerCase().includes(sub.key.toLowerCase()));
+        if (!actualKey) return;
+
+        let entries = studentData
+            .map(s => ({ name: s["Student Name"], score: parseFloat(s[actualKey]) }))
+            .filter(e => !isNaN(e.score))
+            .sort((a, b) => b.score - a.score);
+
+        let currentRank = 0;
+        let lastScore = null;
+        for (let entry of entries) {
+            if (entry.score !== lastScore) currentRank++;
+            lastScore = entry.score;
+            if (currentRank > 3) break;
+
+            results.push({
+                houseId: "red", // Defaulting to Prometheus as requested
+                houseName: "Prometheus",
+                addedPoints: currentRank === 1 ? 10 : currentRank === 2 ? 7 : 5,
+                category: sub.cleanName,
+                rankText: `${currentRank}${currentRank===1?'st':currentRank===2?'nd':'rd'} Place`,
+                eventType: "individual",
+                comment: `${entry.name} ${grade}`.trim()
+            });
+        }
+    });
+    return results;
+}
+
+// --- PARSER 2: STANDARD TEMPLATE ---
+function parseStandardTemplate(rows, housesData) {
+    const errors = [];
+    const data = [];
+    
+    const findHouseId = (name) => {
+        for (let id in housesData) {
+            if (housesData[id].name.toLowerCase().trim() === (name || "").toLowerCase().trim()) return id;
+        }
+        return null;
+    };
+
+    rows.forEach((row, i) => {
+        const line = i + 2;
+        let houseName = row.House?.trim() || "";
+        let houseId = findHouseId(houseName);
+        let category = row.Category?.trim() || "";
+        let eventType = (row.EventType?.trim() || "").toLowerCase();
+        let rawRank = row.Rank?.toString().trim() || "";
+        let points = parseInt(row.Points) || 0;
+
+        const isPenalty = category.toLowerCase() === "penalty" || eventType === "penalty" || points < 0;
+
+        if (!houseId) {
+            errors.push(`Line ${line}: House "${houseName}" not found.`);
+            return;
+        }
+
+        if (isPenalty) {
+            // NEW RULE: Limit penalty to 100
+            let sanitizedPoints = Math.abs(points);
+            if (sanitizedPoints > 100) sanitizedPoints = 100;
+
+            data.push({
+                houseId, houseName, category: "Penalty", eventType: "Penalty",
+                rankText: "Penalty", addedPoints: -sanitizedPoints, comment: row.Comment || ""
+            });
+        } else {
+            const rankMap = { "1": "1st Place", "2": "2nd Place", "3": "3rd Place", "4": "4th Place" };
+            let rankText = rankMap[rawRank] || rawRank;
+
+            // NEW RULE: Individual 4th+ place prevention
+            if (eventType === "individual") {
+                if (rankText.includes("4th") || parseInt(rawRank) >= 4) {
+                    errors.push(`Line ${line}: Individual events cannot have 4th place or lower.`);
+                    return;
+                }
+            }
+
+            // NEW RULE: Group 5th+ place prevention
+            if (eventType === "group") {
+                if (parseInt(rawRank) >= 5 || (!rankMap[rawRank] && rankText !== "4th Place")) {
+                    // This catches "5", "5th Place", etc.
+                    if (!["1st Place", "2nd Place", "3rd Place", "4th Place"].includes(rankText)) {
+                        errors.push(`Line ${line}: Group events cannot have 5th place or lower.`);
+                        return;
+                    }
+                }
+            }
+
+            // Auto-point mapping
+            let finalPoints = 0;
+            if (eventType === "individual") {
+                finalPoints = rankText === "1st Place" ? 10 : rankText === "2nd Place" ? 7 : 5;
+            } else if (eventType === "group") {
+                finalPoints = rankText === "1st Place" ? 100 : rankText === "2nd Place" ? 70 : rankText === "3rd Place" ? 50 : 20;
+            }
+
+            data.push({
+                houseId, houseName, category, eventType, rankText, 
+                addedPoints: finalPoints, comment: row.Comment || ""
+            });
+        }
+    });
+    return { data, errors };
+}
+
+// --- EXECUTOR: ATOMIC FIREBASE UPDATE ---
+async function executeAtomicUpload(readyToUpload, housesData) {
+    const updates = {};
+    const houseScores = {};
+    for (let id in housesData) houseScores[id] = housesData[id].score || 0;
+
+    readyToUpload.forEach(item => {
+        const oldScore = houseScores[item.houseId] || 0;
+        const newScore = oldScore + item.addedPoints;
+        houseScores[item.houseId] = newScore;
+
+        updates[`Houses/${item.houseId}/score`] = newScore;
+        const logKey = db.ref('Logs').push().key;
+        updates[`Logs/${logKey}`] = {
+            fullDateTime: new Date().toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' }),
+            unixTimestamp: firebase.database.ServerValue.TIMESTAMP,
+            rankText: item.rankText,
+            houseId: item.houseId,
+            houseName: item.houseName,
+            previousPoints: oldScore,
+            pointsAdded: item.addedPoints,
+            newTotal: newScore,
+            category: item.category,
+            eventType: item.eventType,
+            comment: item.comment,
+            adminEmail: auth.currentUser?.email || "Bulk System"
+        };
+    });
+    return db.ref().update(updates);
+}
+
+function showErrors(errors) {
+    const errorLog = document.getElementById('error-log');
+    const errorList = document.getElementById('error-list');
+    errorLog.classList.remove('hidden');
+    errors.forEach(err => {
+        const li = document.createElement('li');
+        li.innerText = err;
+        errorList.appendChild(li);
+    });
+}
+
 function resetUploadButton(btn) {
     btn.disabled = false;
-    btn.innerHTML = "Process CSV";
+    btn.innerHTML = "Process CSV/Excel";
     btn.style.opacity = "1";
-    btn.style.cursor = "pointer";
 }
-
 function downloadCSVTemplate() {
 
         // CSV Headers
@@ -227,3 +309,4 @@ function downloadCSVTemplate() {
         document.body.removeChild(link);
     
 }
+
