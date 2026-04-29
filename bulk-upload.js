@@ -4,8 +4,10 @@ async function handleBulkUpload() {
     const status = document.getElementById('upload-status');
     const errorLog = document.getElementById('error-log');
     const errorList = document.getElementById('error-list');
+    const categoryAppendNameSelect = document.getElementById('catergory-append-name-select');
 
     if (!fileInput.files[0]) return alert("Please select a file.");
+    if (categoryAppendNameSelect.value === "") return alert("Please select a Assessment/Module Test.");
 
     const file = fileInput.files[0];
     const isExcel = file.name.endsWith('.xlsx') || file.name.endsWith('.xls');
@@ -126,11 +128,12 @@ function parseSchoolReport(data) {
         if (obj["Student Name"]) studentData.push(obj);
     }
 
+    const categoryAppendNameSelect = document.getElementById('catergory-append-name-select');
     const subjects = [
-        { key: "Bahasa", cleanName: "BM Assessment Test 1" },
-        { key: "Mathematics", cleanName: "Mathematic Assessment Test 1" },
-        { key: "Biology", cleanName: "Biology Assessment Test 1" },
-        { key: "English", cleanName: "English Assessment Test 1" }
+        { key: "Bahasa", cleanName: "BM " + categoryAppendNameSelect.value },
+        { key: "Mathematics", cleanName: "Mathematic " + categoryAppendNameSelect.value},
+        { key: "Biology", cleanName: "Biology " + categoryAppendNameSelect.value },
+        { key: "English", cleanName: "English" + categoryAppendNameSelect.value}
     ];
 
     const results = [];
@@ -310,3 +313,56 @@ function downloadCSVTemplate() {
     
 }
 
+const uploadHelpSteps = [
+  { 
+    header: "Prepare your File", 
+    desc: "Download Excel file from Clobas or upload your CSV/Excel that has headers: House, Category, EventType, Rank, Points, and Comment.", 
+    img: "📄" 
+  },
+  { 
+    header: "Select Assessment", 
+    desc: "Pick the correct Assessment or Module Test from the dropdown before processing.", 
+    img: "🎯" 
+  },
+  { 
+    header: "Check for Errors", 
+    desc: "If any data is missing or incorrect, an error log will appear at the bottom.", 
+    img: "⚠️" 
+  }
+];
+
+let currentStep = 0;
+
+const modal = document.getElementById('helpModal');
+const helpBtn = document.getElementById('helpBtn');
+const closeBtn = document.getElementById('closeBtn');
+const dotsContainer = document.getElementById('dotsContainer');
+
+// Open Modal
+helpBtn.addEventListener('click', () => {
+  modal.classList.remove('hidden');
+  renderStep();
+});
+
+// Close Modal
+closeBtn.onclick = () => modal.classList.add('hidden');
+window.onclick = (e) => { if(e.target === modal) modal.classList.add('hidden'); };
+
+function renderStep() {
+  const data = uploadHelpSteps[currentStep];
+  document.getElementById('slideHeader').innerText = data.header;
+  document.getElementById('slideDesc').innerText = data.desc;
+  document.getElementById('slideImage').innerText = data.img;
+
+  // Dots logic
+  dotsContainer.innerHTML = uploadHelpSteps.map((_, i) => 
+    `<div class="dot ${i === currentStep ? 'active' : 'inactive'}"></div>`
+  ).join('');
+
+  // Nav Buttons
+  document.getElementById('prevBtn').disabled = currentStep === 0;
+  document.getElementById('nextBtn').disabled = currentStep === uploadHelpSteps.length - 1;
+}
+
+document.getElementById('prevBtn').onclick = () => { if(currentStep > 0) { currentStep--; renderStep(); } };
+document.getElementById('nextBtn').onclick = () => { if(currentStep < uploadHelpSteps.length - 1) { currentStep++; renderStep(); } };
