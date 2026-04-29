@@ -259,6 +259,7 @@ body {
     }
 
     .bulk-upload-section {
+      position: relative;
       margin-top: 30px;
       padding: 20px;
       background: #f0f7ff;
@@ -576,6 +577,170 @@ body {
     .skeleton-name { width: 200px; height: 25px; margin-left: 5px; }
     .skeleton-score { width: 25px; height: 25px; border-radius: 10%; }
     /* ---------------------------- */
+
+  /* Floating Help Button */
+.help-trigger {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  width: 30px;
+  height: 30px;
+  background: white;
+  color: black;
+  border: 1px solid #dbeafe;
+  border-radius: 50%;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.helpQuestionMark{
+  margin-top: -6px;
+  margin-left: -2.5px;
+}
+
+.help-trigger:hover {
+  background: #eff6ff;
+  transform: translateY(-1px);
+}
+
+/* Modal Overlay */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+}
+
+.modal-overlay.hidden {
+  display: none;
+}
+
+/* The Modal Card */
+.modal-card {
+  background: white;
+  width: 100%;
+  max-width: 400px;
+  border-radius: 20px;
+  position: relative;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+}
+
+.close-btn {
+  width: 10%;
+  padding: 8px;
+  margin: none;
+  box-sizing: border-box;
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  background: none;
+  border: none;
+  font-size: 24px;
+  color: #9ca3af;
+  cursor: pointer;
+  border-radius: 0;
+}
+
+.close-btn:hover {
+  background: none;
+}
+
+/* Content Styling */
+.carousel-body {
+  padding: 40px 30px;
+  text-align: center;
+}
+
+.slide-icon {
+  width: 80px;
+  height: 80px;
+  background: #eff6ff;
+  border-radius: 16px;
+  margin: 0 auto 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 40px;
+}
+
+.slide-title {
+  font-size: 24px;
+  font-weight: 700;
+  color: #1f2937;
+  margin-bottom: 8px;
+}
+
+.slide-text {
+  color: #4b5563;
+  line-height: 1.6;
+}
+
+/* Navigation Footer */
+.carousel-footer {
+  padding: 0 30px 30px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.nav-arrow {
+  width: 10%;
+  padding: 8px;
+  margin: 0px;
+  border: 0px;
+  border-radius: 8px;
+  box-sizing: border-box;
+  font-size: 1em;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #4b5563;
+  display: flex;
+  transition: background 0.2s;
+}
+
+.nav-arrow:hover:not(:disabled) {
+  background: #f3f4f6;
+}
+
+.nav-arrow:disabled {
+  opacity: 0.2;
+  cursor: not-allowed;
+}
+
+.nav-arrow svg {
+  width: 24px;
+  height: 24px;
+}
+
+/* Dots Indicator */
+.dots-wrapper {
+  display: flex;
+  gap: 8px;
+}
+
+.dot {
+  height: 8px;
+  border-radius: 10px;
+  background: #d1d5db;
+  transition: all 0.3s ease;
+}
+
+.dot.active {
+  background: #2563eb;
+  width: 20px; /* Modern elongated active dot */
+}
+
+.dot.inactive {
+  width: 8px;
+}
 
 
 @media (max-width: 600px) {
