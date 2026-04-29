@@ -22,6 +22,35 @@
     <a href="index.html" style="color: #0077ff; font-weight: bold;">Return to Home</a>
   </div>
 
+  <div id="helpModal" class="modal-overlay hidden">
+    <div class="modal-card">
+      
+      <button id="closeBtn" class="close-btn">&times;</button>
+
+      <div class="carousel-body">
+        <div id="slideImage" class="slide-icon"></div>
+        <h2 id="slideHeader" class="slide-title"></h2>
+        <p id="slideDesc" class="slide-text"></p>
+      </div>
+
+      <div class="carousel-footer">
+        <button id="prevBtn" class="nav-arrow">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M15 19l-7-7 7-7"/>
+          </svg>
+        </button>
+
+        <div id="dotsContainer" class="dots-wrapper"></div>
+
+        <button id="nextBtn" class="nav-arrow">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M9 5l7 7-7 7"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+  </div>
+
   
   <div id="admin-section" class="hidden">
     <div class="prototype-bg"></div>
@@ -101,9 +130,28 @@
       <button id="submit-btn" onclick="updateScore()">Submit Update</button>
 
       <div class="bulk-upload-section">
+        <button id="helpBtn" class="help-trigger">
+          <div class="helpQuestionMark"> ? </div></button>
         <h3>Upload CSV/Excel</h3>
-        <p style="font-size: 0.8em; color: #666;">Upload a CSV or Excel file with headers: <strong>House, Category, EventType, Rank, Points, Comment</strong></p>
-        <input type="file" id="csv-file" accept=".csv, .xlsx, .xls">
+        <p style="font-size: 0.8em; color: #666;">Upload Excel file downloaded from <strong>Clobas</strong> or upload a CSV or Excel file with headers: <strong>House, Category, EventType, Rank, Points, Comment</strong></p>
+        <input type="file" id="csv-file" accept=".csv, .xlsx, .xls" style="background:#f8fbff;">
+        <label>Select Assessment/Module Test:</label>
+        <select id="catergory-append-name-select" style="background:#f8fbff;">
+          <option value="">-- Select Assessment/Module Test First --</option>
+          <option value="Assessment 1">Assessment 1</option>
+          <option value="Assessment 2">Assessment 2</option>
+          <option value="Assessment 3">Assessment 3</option>
+          <option value="MT 1">MT 1</option>
+          <option value="MT 2">MT 2</option>
+          <option value="MT 3">MT 3</option>
+          <option value="MT 4">MT 4</option>
+          <option value="MT 5">MT 5</option>
+          <option value="MT 6">MT 6</option>
+          <option value="MT 7">MT 7</option>
+          <option value="MT 8">MT 8</option>
+          <option value="MT 9">MT 9</option>
+          <option value="MT 10">MT 10</option>
+        </select>
         <button id="upload-btn" onclick="handleBulkUpload()">Process CSV/Excel</button>
         <button id="download-template" onclick="downloadCSVTemplate()" style="background: #666;">Download Template</button>
         <div id="upload-status" style="margin-top: 10px; font-size: 0.9em;"></div>
