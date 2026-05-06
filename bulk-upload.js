@@ -56,6 +56,8 @@ async function processRows(data) {
     try {
         const housesSnapshot = await db.ref('Houses').once('value');
         const housesData = housesSnapshot.val();
+        const studentDataSnapshot = await db.ref('StudentData').once('value');
+        const studentData = studentDataSnapshot.val();
         let readyToUpload = [];
 
         // --- DETECTION LOGIC ---
@@ -65,10 +67,15 @@ async function processRows(data) {
 
         if (isReportFormat) {
             status.innerHTML = "Mode: School Report Detected";
-            readyToUpload = parseSchoolReport(data);
+            const result = parseSchoolReport(data, housesData, studentData);
+            if (result.errors.length > 0) {
+                showErrors(result.errors);
+                return resetUploadButton(uploadBtn);
+            }
+            readyToUpload = result.data;
         } else if (isStandardCSV) {
             status.innerHTML = "Mode: Standard Template Detected";
-            const result = parseStandardTemplate(data, housesData);
+            const result = parseStandardTemplate(data, housesData, studentData);
             if (result.errors.length > 0) {
                 showErrors(result.errors);
                 return resetUploadButton(uploadBtn);
@@ -97,8 +104,54 @@ async function processRows(data) {
     resetUploadButton(uploadBtn);
 }
 
+// --- HELPER: Find student house from StudentData ---
+function findStudentHouse(studentName, grade, studentData, housesData) {
+    // Format grade to match the StudentData key format (e.g., "7.1" -> "Grade7,1")
+    const gradeKey = "Grade" + grade.replace(".", ",");
+    
+    if (!studentData || !studentData[gradeKey]) {
+        return { houseId: null, houseName: null, error: `student "${studentName}" not found` };
+    }
+    
+    // Normalize name for comparison (case-insensitive, order-independent)
+    const normalizeNameParts = (name) => {
+        return name.toLowerCase().trim().split(/\s+/).sort().join(" ");
+    };
+    
+    const inputNameNormalized = normalizeNameParts(studentName);
+    
+    // Case and order-insensitive student name lookup
+    const studentKey = Object.keys(studentData[gradeKey]).find(
+        key => normalizeNameParts(key) === inputNameNormalized
+    );
+    
+    if (!studentKey) {
+        return { houseId: null, houseName: null, error: `student "${studentName}" not found` };
+    }
+    
+    const houseName = studentData[gradeKey][studentKey].houses;
+    if (!houseName) {
+        return { houseId: null, houseName: null, error: `Houses for student "${studentName}" is null` };
+    }
+    
+    // Find the house ID from the house name
+    let houseId = null;
+    for (let id in housesData) {
+        if (housesData[id].name.toLowerCase().trim() === houseName.toLowerCase().trim()) {
+            houseId = id;
+            break;
+        }
+    }
+    
+    if (!houseId) {
+        return { houseId: null, houseName: null, error: `House "${houseName}" not found in system` };
+    }
+    
+    return { houseId, houseName, error: null };
+}
+
 // --- PARSER 1: SCHOOL REPORT ---
-function parseSchoolReport(data) {
+function parseSchoolReport(data, housesData, studentData) {
     let grade = "7.1";
     let headerRowIndex = -1;
     let headers = [];
@@ -116,32 +169,53 @@ function parseSchoolReport(data) {
         }
     }
 
-    if (headerRowIndex === -1) return [];
+    if (headerRowIndex === -1) return { data: [], errors: [] };
 
-    const studentData = [];
+    const reportStudents = [];
     for (let i = headerRowIndex + 1; i < data.length; i++) {
         const firstCell = String(data[i][0] || "");
         if (firstCell.includes("Exam Details") || firstCell.includes("Report Generated")) break;
         
         let obj = {};
         headers.forEach((h, idx) => { if (h) obj[h] = data[i][idx]; });
-        if (obj["Student Name"]) studentData.push(obj);
+        if (obj["Student Name"]) reportStudents.push(obj);
     }
 
     const categoryAppendNameSelect = document.getElementById('catergory-append-name-select');
     const subjects = [
-        { key: "Bahasa", cleanName: "BM " + categoryAppendNameSelect.value },
+        { key: "Bahasa Malaysia", cleanName: "BM " + categoryAppendNameSelect.value },
         { key: "Mathematics", cleanName: "Mathematic " + categoryAppendNameSelect.value},
         { key: "Biology", cleanName: "Biology " + categoryAppendNameSelect.value },
-        { key: "English", cleanName: "English" + categoryAppendNameSelect.value}
+        { key: "Chemistry", cleanName: "Chemistry " + categoryAppendNameSelect.value },
+        { key: "Physics", cleanName: "Physics " + categoryAppendNameSelect.value },
+        { key: "Additional Mathematics", cleanName: "Add Math " + categoryAppendNameSelect.value},
+        { key: "Economics", cleanName: "Econ " + categoryAppendNameSelect.value},
+        { key: "Psychology", cleanName: "Psychology " + categoryAppendNameSelect.value },
+        { key: "Accounting", cleanName: "Account " + categoryAppendNameSelect.value },
+        { key: "Business Studies", cleanName: "Business Studies " + categoryAppendNameSelect.value },
+        { key: "English as a second language", cleanName: "ESL " + categoryAppendNameSelect.value},
+        { key: "English", cleanName: "English " + categoryAppendNameSelect.value},
     ];
 
     const results = [];
+    const errors = [];
+    
     subjects.forEach(sub => {
-        const actualKey = headers.find(h => h && h.toLowerCase().includes(sub.key.toLowerCase()));
-        if (!actualKey) return;
+        const actualKey = headers.find(h => {
+            if (!h) return false;
+            const headerLower = h.toLowerCase();
+            const keyLower = sub.key.toLowerCase();
 
-        let entries = studentData
+            if (sub.key === "English" && headerLower.includes("second language")) {
+                return false;
+            }
+            if (sub.key === "Mathematics" && headerLower.includes("Additional")) {
+                return false;
+            }
+            return headerLower.includes(keyLower);
+        });
+
+        let entries = reportStudents
             .map(s => ({ name: s["Student Name"], score: parseFloat(s[actualKey]) }))
             .filter(e => !isNaN(e.score))
             .sort((a, b) => b.score - a.score);
@@ -153,9 +227,16 @@ function parseSchoolReport(data) {
             lastScore = entry.score;
             if (currentRank > 3) break;
 
+            // Look up student house from database
+            const houseInfo = findStudentHouse(entry.name, grade, studentData, housesData);
+            if (houseInfo.error) {
+                errors.push(houseInfo.error);
+                return; // Skip this entry
+            }
+
             results.push({
-                houseId: "red", // Defaulting to Prometheus as requested
-                houseName: "Prometheus",
+                houseId: houseInfo.houseId,
+                houseName: houseInfo.houseName,
                 addedPoints: currentRank === 1 ? 10 : currentRank === 2 ? 7 : 5,
                 category: sub.cleanName,
                 rankText: `${currentRank}${currentRank===1?'st':currentRank===2?'nd':'rd'} Place`,
@@ -164,11 +245,11 @@ function parseSchoolReport(data) {
             });
         }
     });
-    return results;
+    return { data: results, errors: errors };
 }
 
 // --- PARSER 2: STANDARD TEMPLATE ---
-function parseStandardTemplate(rows, housesData) {
+function parseStandardTemplate(rows, housesData, studentData) {
     const errors = [];
     const data = [];
     
@@ -316,7 +397,7 @@ function downloadCSVTemplate() {
 const uploadHelpSteps = [
   { 
     header: "Prepare your File", 
-    desc: "Download Excel file from Clobas or upload your CSV/Excel that has headers: House, Category, EventType, Rank, Points, and Comment.", 
+    desc: "Download Excel file from Clobas or prepare your own CSV that has headers: House, Category, EventType, Rank, Points, and Comment. \n(Download template for examples.)", 
     img: "📄" 
   },
   { 
