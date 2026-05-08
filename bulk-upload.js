@@ -194,7 +194,10 @@ function parseSchoolReport(data, housesData, studentData) {
         { key: "Accounting", cleanName: "Account " + categoryAppendNameSelect.value },
         { key: "Business Studies", cleanName: "Business Studies " + categoryAppendNameSelect.value },
         { key: "English as a second language", cleanName: "ESL " + categoryAppendNameSelect.value},
+        { key: "English as a first language", cleanName: "EFL " + categoryAppendNameSelect.value},
         { key: "English", cleanName: "English " + categoryAppendNameSelect.value},
+        { key: "History", cleanName: "History " + categoryAppendNameSelect.value },
+        { key: "Geography", cleanName: "Geography " + categoryAppendNameSelect.value },
     ];
 
     const results = [];
@@ -206,7 +209,7 @@ function parseSchoolReport(data, housesData, studentData) {
             const headerLower = h.toLowerCase();
             const keyLower = sub.key.toLowerCase();
 
-            if (sub.key === "English" && headerLower.includes("second language")) {
+            if (sub.key === "English" && headerLower.includes("language")) {
                 return false;
             }
             if (sub.key === "Mathematics" && headerLower.includes("Additional")) {
