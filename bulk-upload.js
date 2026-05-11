@@ -400,7 +400,7 @@ function downloadCSVTemplate() {
 const uploadHelpSteps = [
   { 
     header: "Prepare your File", 
-    desc: "Download Excel file from Clobas or prepare your own CSV that has headers: House, Category, EventType, Rank, Points, and Comment. \n(Download template for examples.)", 
+    desc: "Download Student Marks Result(.xls) from Clobas or prepare your own CSV that has headers: House, Category, EventType, Rank, Points, and Comment. \n(Download template for examples.)", 
     img: "📄" 
   },
   { 
