@@ -135,23 +135,25 @@
         <h3>Upload CSV/Excel</h3>
         <p style="font-size: 0.8em; color: #666;">Upload Student Marks Report(.xls) downloaded from <strong>Clobas</strong> or upload a CSV with headers: <strong>House, Category, EventType, Rank, Points, Comment</strong></p>
         <input type="file" id="csv-file" accept=".csv, .xlsx, .xls" style="background:#f8fbff;">
-        <label>Select Assessment/Module Test:</label>
-        <select id="catergory-append-name-select" style="background:#f8fbff;">
-          <option value="">-- Select Assessment/Module Test First --</option>
-          <option value="Assessment 1">Assessment 1</option>
-          <option value="Assessment 2">Assessment 2</option>
-          <option value="Assessment 3">Assessment 3</option>
-          <option value="MT 1">MT 1</option>
-          <option value="MT 2">MT 2</option>
-          <option value="MT 3">MT 3</option>
-          <option value="MT 4">MT 4</option>
-          <option value="MT 5">MT 5</option>
-          <option value="MT 6">MT 6</option>
-          <option value="MT 7">MT 7</option>
-          <option value="MT 8">MT 8</option>
-          <option value="MT 9">MT 9</option>
-          <option value="MT 10">MT 10</option>
-        </select>
+        <div id="assessment-select-container" class="hidden">
+          <label>Select Assessment/Module Test:</label>
+          <select id="catergory-append-name-select" style="background:#f8fbff;">
+            <option value="">-- Select Assessment/Module Test First --</option>
+            <option value="Assessment 1">Assessment 1</option>
+            <option value="Assessment 2">Assessment 2</option>
+            <option value="Assessment 3">Assessment 3</option>
+            <option value="MT 1">MT 1</option>
+            <option value="MT 2">MT 2</option>
+            <option value="MT 3">MT 3</option>
+            <option value="MT 4">MT 4</option>
+            <option value="MT 5">MT 5</option>
+            <option value="MT 6">MT 6</option>
+            <option value="MT 7">MT 7</option>
+            <option value="MT 8">MT 8</option>
+            <option value="MT 9">MT 9</option>
+            <option value="MT 10">MT 10</option>
+          </select>
+        </div>
         <button id="upload-btn" onclick="handleBulkUpload()">Process CSV/Excel</button>
         <button id="download-template" onclick="downloadCSVTemplate()" style="background: #666;">Download Template</button>
         <div id="upload-status" style="margin-top: 10px; font-size: 0.9em;"></div>

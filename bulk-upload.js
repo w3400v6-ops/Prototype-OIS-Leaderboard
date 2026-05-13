@@ -5,12 +5,11 @@ async function handleBulkUpload() {
     const errorLog = document.getElementById('error-log');
     const errorList = document.getElementById('error-list');
     const categoryAppendNameSelect = document.getElementById('catergory-append-name-select');
+    const assessmentSelectContainer = document.getElementById('assessment-select-container');
 
     if (!fileInput.files[0]) return alert("Please select a file.");
-    if (categoryAppendNameSelect.value === "") return alert("Please select a Assessment/Module Test.");
 
     const file = fileInput.files[0];
-    const isExcel = file.name.endsWith('.xlsx') || file.name.endsWith('.xls');
 
     // UI Reset
     status.innerHTML = "⏳ Processing file...";
@@ -22,31 +21,142 @@ async function handleBulkUpload() {
     uploadBtn.innerHTML = "⏳ Processing...";
     uploadBtn.style.opacity = "0.5";
 
-    if (isExcel) {
+    const processFileData = (rawData) => {
+        if (!Array.isArray(rawData) || rawData.length === 0) {
+            status.innerHTML = "❌ Error: Empty file or unsupported format.";
+            assessmentSelectContainer?.classList.add('hidden');
+            return resetUploadButton(uploadBtn);
+        }
+
+        const firstRow = rawData[0].map(cell => String(cell || "").trim());
+        const firstRowText = firstRow.join(" ").toLowerCase();
+
+        if (firstRowText.includes("oakbridge international school")) {
+            assessmentSelectContainer?.classList.remove('hidden');
+            if (categoryAppendNameSelect.value === "") {
+                status.innerHTML = "❌ Please select an Assessment/Module Test for Clobas uploads.";
+                resetUploadButton(uploadBtn);
+                return;
+            }
+            processRows(rawData, true);
+            return;
+        }
+
+        assessmentSelectContainer?.classList.add('hidden');
+        if (firstRow.some(cell => /\b1a\b/i.test(cell)) || firstRow.some(cell => /house/i.test(cell))) {
+            const objectRows = convertRowsToObjects(rawData);
+            if (!objectRows || objectRows.length === 0) {
+                status.innerHTML = "❌ Error: Could not interpret custom template format.";
+                return resetUploadButton(uploadBtn);
+            }
+            processRows(objectRows, false);
+            return;
+        }
+
+        status.innerHTML = "❌ Error: Unrecognized file format.";
+        resetUploadButton(uploadBtn);
+    };
+
+    if (file.name.endsWith('.xlsx') || file.name.endsWith('.xls')) {
         const reader = new FileReader();
         reader.onload = (e) => {
             const data = new Uint8Array(e.target.result);
             const workbook = XLSX.read(data, { type: 'array' });
             const sheet = workbook.Sheets[workbook.SheetNames[0]];
-            // Read as raw array of arrays to handle custom report headers
             const rawData = XLSX.utils.sheet_to_json(sheet, { header: 1 });
-            processRows(rawData); 
+            processFileData(rawData);
         };
         reader.readAsArrayBuffer(file);
     } else {
-        // Standard CSV processing
         Papa.parse(file, {
-            header: true,
+            header: false,
             skipEmptyLines: true,
             complete: (results) => {
-                // Check if it's the raw array style or object style
-                processRows(results.data);
+                processFileData(results.data);
             }
         });
     }
 }
 
-async function processRows(data) {
+function convertRowsToObjects(rawData) {
+    if (!rawData || rawData.length < 2) return [];
+
+    const rawHeader = rawData[0].map(cell => String(cell || "").trim());
+    const lowerHeaders = rawHeader.map(h => h.toLowerCase());
+    const hasHeader = ["house", "category", "eventtype", "rank", "points"].every(
+        required => lowerHeaders.some(header => header.includes(required))
+    );
+
+    if (hasHeader) {
+        return rawData.slice(1).map(row => {
+            const obj = {};
+            rawHeader.forEach((col, idx) => {
+                if (col) obj[col.trim()] = row[idx];
+            });
+            return obj;
+        });
+    }
+
+    // Fallback: assume columns are in the standard template order.
+    return rawData.map(row => ({
+        House: row[0],
+        Category: row[1],
+        EventType: row[2],
+        Rank: row[3],
+        Points: row[4],
+        Comment: row[5]
+    }));
+}
+
+function isClobasFileData(rawData) {
+    if (!Array.isArray(rawData) || rawData.length === 0) return false;
+    const firstRow = rawData[0].map(cell => String(cell || "").trim());
+    const firstRowText = firstRow.join(" ").toLowerCase();
+    return firstRowText.includes("oakbridge international school");
+}
+
+function updateAssessmentVisibility(show) {
+    const assessmentSelectContainer = document.getElementById('assessment-select-container');
+    const categoryAppendNameSelect = document.getElementById('catergory-append-name-select');
+    if (!assessmentSelectContainer) return;
+    assessmentSelectContainer.classList.toggle('hidden', !show);
+    if (!show && categoryAppendNameSelect) categoryAppendNameSelect.value = "";
+}
+
+function handleFileInputChange() {
+    const fileInput = document.getElementById('csv-file');
+    const status = document.getElementById('upload-status');
+    if (!fileInput || !fileInput.files[0]) {
+        updateAssessmentVisibility(false);
+        return;
+    }
+
+    const file = fileInput.files[0];
+    status.innerHTML = "";
+
+    if (file.name.endsWith('.xlsx') || file.name.endsWith('.xls')) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            const data = new Uint8Array(e.target.result);
+            const workbook = XLSX.read(data, { type: 'array' });
+            const sheet = workbook.Sheets[workbook.SheetNames[0]];
+            const rawData = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+            updateAssessmentVisibility(isClobasFileData(rawData));
+        };
+        reader.readAsArrayBuffer(file);
+    } else {
+        Papa.parse(file, {
+            header: false,
+            preview: 1,
+            skipEmptyLines: true,
+            complete: (results) => {
+                updateAssessmentVisibility(isClobasFileData(results.data));
+            }
+        });
+    }
+}
+
+async function processRows(data, isClobas = false) {
     const status = document.getElementById('upload-status');
     const uploadBtn = document.getElementById('upload-btn');
     const errorLog = document.getElementById('error-log');
@@ -96,6 +206,7 @@ async function processRows(data) {
         status.innerHTML = `✅ Successfully uploaded ${readyToUpload.length} entries!`;
         status.style.color = "#22c55e";
         fileInput.value = ""; // Reset file input
+        updateAssessmentVisibility(false);
 
     } catch (err) {
         console.error(err);
@@ -416,6 +527,11 @@ const uploadHelpSteps = [
 ];
 
 let currentStep = 0;
+
+const fileInput = document.getElementById('csv-file');
+if (fileInput) {
+    fileInput.addEventListener('change', handleFileInputChange);
+}
 
 const modal = document.getElementById('helpModal');
 const helpBtn = document.getElementById('helpBtn');
