@@ -246,24 +246,26 @@ function findStudentHouse(studentName, grade, studentData, housesData) {
     
     const inputNameNormalized = normalizeNameParts(studentName);
     
-    // Case and order-insensitive student name lookup, including nickname in full-name search
     let studentKey = Object.keys(studentData[gradeKey]).find((key) => {
-        const studentRecord = studentData[gradeKey][key] || {};
-        const nicknames = studentRecord.nickname || studentRecord.nicknames;
-        const nicknameList = nicknames ? (Array.isArray(nicknames) ? nicknames : [nicknames]) : [];
+    const studentRecord = studentData[gradeKey][key] || {};
+    const nicknames = studentRecord.nickname || studentRecord.nicknames || [];
+    const nicknameList = Array.isArray(nicknames) ? nicknames : [nicknames];
 
-        // Check exact full name first
-        if (normalizeNameParts(key) === inputNameNormalized) return true;
+    // 1. Prepare the search pool (Full Name + Nicknames)
+    const dbNameNormalized = normalizeNameParts(key);
+    const dbTokens = new Set([
+        ...dbNameNormalized.split(' '),
+        ...nicknameList.flatMap(n => normalizeNameParts(n).split(' '))
+    ]);
 
-        // Check full name plus nickname tokens together
-        if (nicknameList.some(nickname => normalizeNameParts(`${key} ${nickname}`) === inputNameNormalized)) return true;
-        if (nicknameList.some(nickname => normalizeNameParts(`${nickname} ${key}`) === inputNameNormalized)) return true;
+    // 2. Prepare the input
+    const inputTokens = inputNameNormalized.split(' ');
 
-        // Also allow matching nickname alone
-        if (nicknameList.some(nickname => normalizeNameParts(nickname) === inputNameNormalized)) return true;
-
-        return false;
-    });
+    // 3. Logic: Does the database contain all pieces of the input?
+    // This allows "John" to match "John Smith" 
+    // and "Smith John" to match "John Smith"
+    return inputTokens.every(token => dbTokens.has(token));
+});
     
     if (!studentKey) {
         return { houseId: null, houseName: null, error: `student "${studentName}" not found` };
