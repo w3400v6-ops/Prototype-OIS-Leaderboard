@@ -551,21 +551,21 @@ function startRecycleBinListener() {
         row.insertCell(1).innerHTML = `
             <strong>${item.houseName}</strong> loses <strong>${Math.abs(item.pointsAdded)} points </strong>
             for recieving a <strong>${item.rankText}</strong> due to <strong>${item.category}</strong>
-            <br><small> Deleted by — ${item.deletedBy}</small>
+            <br><small> ${item.comment} — ${item.deletedBy}</small>
         `;
         }
 
         else if (!item.rankText || item.rankText === "") {
         row.insertCell(1).innerHTML = `
             <strong>${item.houseName}</strong> gains <strong>${Math.abs(item.pointsAdded)} points </strong> in <strong>${item.category}</strong>
-            <br><small> Deleted by — ${item.deletedBy}</small>
+            <br><small> ${item.comment} — ${item.deletedBy}</small>
         `;
         }
         else{
         row.insertCell(1).innerHTML = `
             <strong>${item.houseName}</strong> gains <strong>${Math.abs(item.pointsAdded)} points </strong>
             for winning <strong>${item.rankText}</strong> in <strong>${item.category}</strong>
-            <br><small> Deleted by — ${item.deletedBy}</small>
+            <br><small> ${item.comment} — ${item.deletedBy}</small>
         `;
         }
         
