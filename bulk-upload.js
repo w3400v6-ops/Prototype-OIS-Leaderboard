@@ -215,23 +215,40 @@ async function processRows(data, isClobas = false) {
     resetUploadButton(uploadBtn);
 }
 
-// --- HELPER: Find student house from StudentData ---
-function findStudentHouse(studentName, grade, studentData, housesData) {
-    // Map display grade names to database keys for grades 9 and 10
-    const gradeMappings = {
-        "9 Arts": "Grade9A",
-        "9 Science": "Grade9S",
-        "10 Arts": "Grade10A",
-        "10 Science": "Grade10S"
-    };
+function normalizeGradeInput(rawGrade) {
+    const cleaned = String(rawGrade || "").replace(/Grade\s*/i, "").trim();
+    const shortLabel = cleaned
+        .replace(/\bArts?\b/i, "A")
+        .replace(/\bSciences?\b/i, "S")
+        .replace(/\s+/g, ""
+        )
+        .toUpperCase();
 
     let gradeKey;
-    if (gradeMappings[grade]) {
-        gradeKey = gradeMappings[grade];
+    let gradeLabel;
+
+    if (/^(\d+)([AS])$/.test(shortLabel)) {
+        const parts = shortLabel.match(/^(\d+)([AS])$/);
+        gradeKey = `Grade${parts[1]}${parts[2]}`;
+        gradeLabel = `${parts[1]}${parts[2]}`;
     } else {
-        // Format grade to match the StudentData key format (e.g., "7.1" -> "Grade7,1")
-        gradeKey = "Grade" + grade.replace(".", ",");
+        gradeKey = "Grade" + cleaned.replace(".", ",");
+        gradeLabel = cleaned;
     }
+
+    return { gradeKey, gradeLabel };
+}
+
+function titleCaseName(name) {
+    return String(name || "")
+        .toLowerCase()
+        .replace(/\b([a-z])/g, (match) => match.toUpperCase())
+        .trim();
+}
+
+// --- HELPER: Find student house from StudentData ---
+function findStudentHouse(studentName, grade, studentData, housesData) {
+    const { gradeKey } = normalizeGradeInput(grade);
     
     if (!studentData || !studentData[gradeKey]) {
         return { houseId: null, houseName: null, error: `student "${studentName}" not found` };
@@ -323,6 +340,7 @@ function parseSchoolReport(data, housesData, studentData) {
         if (obj["Student Name"]) reportStudents.push(obj);
     }
 
+    const { gradeLabel } = normalizeGradeInput(grade);
     const categoryAppendNameSelect = document.getElementById('catergory-append-name-select');
     const subjects = [
         { key: "Bahasa Malaysia", cleanName: "BM " + categoryAppendNameSelect.value },
@@ -387,7 +405,7 @@ function parseSchoolReport(data, housesData, studentData) {
                 category: sub.cleanName,
                 rankText: `${currentRank}${currentRank===1?'st':currentRank===2?'nd':'rd'} Place`,
                 eventType: "individual",
-                comment: `${entry.name} ${grade}`.trim()
+                comment: `${titleCaseName(entry.name)} ${gradeLabel}`.trim()
             });
         }
     });
