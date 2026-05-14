@@ -217,8 +217,21 @@ async function processRows(data, isClobas = false) {
 
 // --- HELPER: Find student house from StudentData ---
 function findStudentHouse(studentName, grade, studentData, housesData) {
-    // Format grade to match the StudentData key format (e.g., "7.1" -> "Grade7,1")
-    const gradeKey = "Grade" + grade.replace(".", ",");
+    // Map display grade names to database keys for grades 9 and 10
+    const gradeMappings = {
+        "9 Arts": "Grade9A",
+        "9 Science": "Grade9S",
+        "10 Arts": "Grade10A",
+        "10 Science": "Grade10S"
+    };
+
+    let gradeKey;
+    if (gradeMappings[grade]) {
+        gradeKey = gradeMappings[grade];
+    } else {
+        // Format grade to match the StudentData key format (e.g., "7.1" -> "Grade7,1")
+        gradeKey = "Grade" + grade.replace(".", ",");
+    }
     
     if (!studentData || !studentData[gradeKey]) {
         return { houseId: null, houseName: null, error: `student "${studentName}" not found` };
@@ -226,15 +239,31 @@ function findStudentHouse(studentName, grade, studentData, housesData) {
     
     // Normalize name for comparison (case-insensitive, order-independent)
     const normalizeNameParts = (name) => {
-        return name.toLowerCase().trim().split(/\s+/).sort().join(" ");
+        if (!name) return "";
+        const withoutParens = name.replace(/\([^)]*\)/g, "");
+        return withoutParens.toLowerCase().trim().split(/\s+/).filter(Boolean).sort().join(" ");
     };
     
     const inputNameNormalized = normalizeNameParts(studentName);
     
-    // Case and order-insensitive student name lookup
-    const studentKey = Object.keys(studentData[gradeKey]).find(
-        key => normalizeNameParts(key) === inputNameNormalized
-    );
+    // Case and order-insensitive student name lookup, including nickname in full-name search
+    let studentKey = Object.keys(studentData[gradeKey]).find((key) => {
+        const studentRecord = studentData[gradeKey][key] || {};
+        const nicknames = studentRecord.nickname || studentRecord.nicknames;
+        const nicknameList = nicknames ? (Array.isArray(nicknames) ? nicknames : [nicknames]) : [];
+
+        // Check exact full name first
+        if (normalizeNameParts(key) === inputNameNormalized) return true;
+
+        // Check full name plus nickname tokens together
+        if (nicknameList.some(nickname => normalizeNameParts(`${key} ${nickname}`) === inputNameNormalized)) return true;
+        if (nicknameList.some(nickname => normalizeNameParts(`${nickname} ${key}`) === inputNameNormalized)) return true;
+
+        // Also allow matching nickname alone
+        if (nicknameList.some(nickname => normalizeNameParts(nickname) === inputNameNormalized)) return true;
+
+        return false;
+    });
     
     if (!studentKey) {
         return { houseId: null, houseName: null, error: `student "${studentName}" not found` };
@@ -270,8 +299,8 @@ function parseSchoolReport(data, housesData, studentData) {
     for (let i = 0; i < data.length; i++) {
         const rowString = data[i].join(" ");
         if (rowString.includes("Grade")) {
-            const match = rowString.match(/Grade\s*:\s*([\d.]+)/i);
-            if (match) grade = match[1];
+            const match = rowString.match(/Grade\s*:\s*(.+)/i);
+            if (match) grade = match[1].trim();
         }
         if (data[i].includes("Student Name")) {
             headerRowIndex = i;
@@ -305,10 +334,11 @@ function parseSchoolReport(data, housesData, studentData) {
         { key: "Accounting", cleanName: "Account " + categoryAppendNameSelect.value },
         { key: "Business Studies", cleanName: "Business Studies " + categoryAppendNameSelect.value },
         { key: "English as a second language", cleanName: "ESL " + categoryAppendNameSelect.value},
-        { key: "English as a first language", cleanName: "EFL " + categoryAppendNameSelect.value},
+        { key: "English - first language", cleanName: "EFL " + categoryAppendNameSelect.value},
         { key: "English", cleanName: "English " + categoryAppendNameSelect.value},
         { key: "History", cleanName: "History " + categoryAppendNameSelect.value },
         { key: "Geography", cleanName: "Geography " + categoryAppendNameSelect.value },
+        { key: "C.sci", cleanName: "Combined Science " + categoryAppendNameSelect.value },
     ];
 
     const results = [];
