@@ -6,6 +6,7 @@ body {
       flex-direction: column;
       align-items: center;
       min-height: 100vh;
+      padding-bottom: 150px;
     }
     a { text-decoration: none; }
     hr { border: 0; border-top: 2px solid #eee; margin: 10px 0; }
@@ -545,9 +546,23 @@ body {
     border-radius: 15px;
     padding: 20px;
     box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+    display: flex;
+    flex-direction: column;
+    max-height: 750px; /* fixed container height for approximately 10 logs */
+    overflow: hidden;
+    opacity: 1;
+    visibility: visible;
+    transition: max-height 0.4s ease-out, opacity 0.35s ease-out, margin-top 0.35s ease-out, padding 0.35s ease-out;
 
     /* 🟢 Smooth entry animation */
     animation: slideDown 0.4s ease-out;
+}
+
+#search-log-list {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    padding-right: 5px; /* prevent scrollbar overlap */
 }
 
 @keyframes slideDown {
@@ -562,7 +577,13 @@ body {
 }
 
 .log-results-container.hidden {
-    display: none;
+    max-height: 0;
+    opacity: 0;
+    visibility: hidden;
+    margin-top: 0;
+    padding-top: 0;
+    padding-bottom: 0;
+    pointer-events: none;
 }
 
 .results-header {

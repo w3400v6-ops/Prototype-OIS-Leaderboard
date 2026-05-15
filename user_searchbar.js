@@ -1,42 +1,44 @@
 let currentSearchPage = 1;
 let filteredLogsGlobal = [];
 const logsPerPage = 10;
+const searchDelayMs = 300;
+let searchTimer = null;
 
 const searchInput = document.getElementById('studentSearch');
 const dynamicView = document.getElementById('dynamic-log-view');
 const logList = document.getElementById('search-log-list');
 
+
+// 2. Updated Event Listener
 searchInput.addEventListener('input', (e) => {
-    const query = e.target.value.toLowerCase().trim();
+    const query = e.target.value.trim();
 
     if (query.length === 0) {
         dynamicView.classList.add('hidden');
+        clearTimeout(searchTimer);
         return;
     }
 
-    // 1. Filter the logs and store them globally
-    filteredLogsGlobal = Object.values(allLogs)
-        .reverse()
-        .filter(log => {
-            const isPlaceholder = !log.comment || log.comment === "No comment provided";
-
-            const searchableText = [
-                log.houseName,
-                log.category,
-                log.rankText,
-                isPlaceholder ? "" : log.comment
-            ].join(' ').toLowerCase();
-            return searchableText.includes(query);
+    clearTimeout(searchTimer);
+    searchTimer = setTimeout(() => {
+        const currentData = Object.values(allLogs);
+        const fuse = new Fuse(currentData, {
+            keys: ['houseName', 'category', 'rankText', 'comment'],
+            threshold: 0.4
         });
 
-    currentSearchPage = 1; // Reset to page 1 on new search
-    dynamicView.classList.remove('hidden');
-    renderPaginatedLogs();
+        const results = fuse.search(query);
+        filteredLogsGlobal = results.map(result => result.item);
 
-    const searchSection = document.querySelector('.search-section');
-    setTimeout(() => {
-        searchSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }, 100); 
+        currentSearchPage = 1;
+        dynamicView.classList.remove('hidden');
+        renderPaginatedLogs();
+
+        const searchSection = document.querySelector('.search-section');
+        setTimeout(() => {
+            searchSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }, 100);
+    }, searchDelayMs);
 });
 
 function renderPaginatedLogs() {
