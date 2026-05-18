@@ -57,24 +57,13 @@ async function handleBulkUpload() {
         resetUploadButton(uploadBtn);
     };
 
-    if (file.name.endsWith('.xlsx') || file.name.endsWith('.xls')) {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            const data = new Uint8Array(e.target.result);
-            const workbook = XLSX.read(data, { type: 'array' });
-            const sheet = workbook.Sheets[workbook.SheetNames[0]];
-            const rawData = XLSX.utils.sheet_to_json(sheet, { header: 1 });
-            processFileData(rawData);
-        };
-        reader.readAsArrayBuffer(file);
-    } else {
-        Papa.parse(file, {
-            header: false,
-            skipEmptyLines: true,
-            complete: (results) => {
-                processFileData(results.data);
-            }
-        });
+    try {
+        const rawData = await getRawDataFromFile(file);
+        processFileData(rawData);
+    } catch (error) {
+        console.error(error);
+        status.innerHTML = "❌ Error reading file. Please select a valid CSV or Excel file.";
+        resetUploadButton(uploadBtn);
     }
 }
 
@@ -115,6 +104,34 @@ function isClobasFileData(rawData) {
     return firstRowText.includes("oakbridge international school");
 }
 
+function readFileAsArrayBuffer(file) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = (e) => resolve(e.target.result);
+        reader.onerror = (e) => reject(e.target.error || new Error('Failed to read file'));
+        reader.readAsArrayBuffer(file);
+    });
+}
+
+async function getRawDataFromFile(file) {
+    if (/\.(xlsx|xls)$/i.test(file.name)) {
+        const arrayBuffer = await readFileAsArrayBuffer(file);
+        const data = new Uint8Array(arrayBuffer);
+        const workbook = XLSX.read(data, { type: 'array' });
+        const sheet = workbook.Sheets[workbook.SheetNames[0]];
+        return XLSX.utils.sheet_to_json(sheet, { header: 1 });
+    }
+
+    return new Promise((resolve, reject) => {
+        Papa.parse(file, {
+            header: false,
+            skipEmptyLines: true,
+            complete: (results) => resolve(results.data),
+            error: (err) => reject(err)
+        });
+    });
+}
+
 function updateAssessmentVisibility(show) {
     const assessmentSelectContainer = document.getElementById('assessment-select-container');
     const categoryAppendNameSelect = document.getElementById('catergory-append-name-select');
@@ -123,7 +140,7 @@ function updateAssessmentVisibility(show) {
     if (!show && categoryAppendNameSelect) categoryAppendNameSelect.value = "";
 }
 
-function handleFileInputChange() {
+async function handleFileInputChange() {
     const fileInput = document.getElementById('csv-file');
     const status = document.getElementById('upload-status');
     if (!fileInput || !fileInput.files[0]) {
@@ -134,25 +151,12 @@ function handleFileInputChange() {
     const file = fileInput.files[0];
     status.innerHTML = "";
 
-    if (file.name.endsWith('.xlsx') || file.name.endsWith('.xls')) {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            const data = new Uint8Array(e.target.result);
-            const workbook = XLSX.read(data, { type: 'array' });
-            const sheet = workbook.Sheets[workbook.SheetNames[0]];
-            const rawData = XLSX.utils.sheet_to_json(sheet, { header: 1 });
-            updateAssessmentVisibility(isClobasFileData(rawData));
-        };
-        reader.readAsArrayBuffer(file);
-    } else {
-        Papa.parse(file, {
-            header: false,
-            preview: 1,
-            skipEmptyLines: true,
-            complete: (results) => {
-                updateAssessmentVisibility(isClobasFileData(results.data));
-            }
-        });
+    try {
+        const rawData = await getRawDataFromFile(file);
+        updateAssessmentVisibility(isClobasFileData(rawData));
+    } catch (error) {
+        console.error(error);
+        updateAssessmentVisibility(false);
     }
 }
 

@@ -1,18 +1,3 @@
-const firebaseConfig = {
-    apiKey: "AIzaSyBIIEQt0ryHNulKYNmfCliMywmSzzQuBls",
-    authDomain: "my-epic-database.firebaseapp.com",
-    databaseURL: "https://my-epic-database-default-rtdb.firebaseio.com",
-    projectId: "my-epic-database",
-    storageBucket: "my-epic-database.appspot.com",
-    messagingSenderId: "533989527206",
-    appId: "1:533989527206:web:d34c0a693e6f19dc43ae67"
-};
-
-firebase.initializeApp(firebaseConfig);
-const auth = firebase.auth();
-const db = firebase.database();
-
-
 const houseEls = Array.from(document.querySelectorAll('.house'))
 
 let eventTypeData = {}; // Global variable to store points from DB
@@ -308,18 +293,6 @@ function startLeaderboardListener() {
     });
 }
 
-let displayLimit = 5; // Start with 5
-
-function expandLogs() {
-    displayLimit += 10; // Increase to 50 (or whatever number you prefer)
-    startLogsListener(); // Restart the listener with the new limit
-
-    const container = document.querySelector('.logs-container');
-    if (container) {
-    container.scrollTop = 0;
-    }
-}
-
 let currentPage = 1;
 const logsPerPage = 10;
 let totalLogsArray = []; // To store the logs for pagination math
@@ -508,15 +481,13 @@ function deleteLog(logId, logData) {
     if (result.committed) {
         // 2. Add the log to the Recycle node
         const recycleRef = db.ref('Recycle').push();
-        recycleRef.set({
+        return recycleRef.set({
         ...logData,
         deletedAt: firebase.database.ServerValue.TIMESTAMP,
         deletedBy: auth.currentUser.email
-        });
-
-        // 3. Remove the original log from Logs
-        return db.ref('Logs').child(logId).remove();
-        alert("Log deleted and points reverted!");
+        })
+        .then(() => db.ref('Logs').child(logId).remove())
+        .then(() => alert("Log deleted and points reverted!"));
     }
     }).catch(err => {
     alert("Error reverting points: " + err.message);
@@ -621,7 +592,13 @@ function restoreLog(recycleId, itemData) {
 let idleTimer;
 function resetTimer() {
     clearTimeout(idleTimer);
-    idleTimer = setTimeout(() => { logout(); }, 10 * 60 * 1000);
+    idleTimer = setTimeout(() => {
+        auth.signOut().then(() => {
+            window.location.reload();
+        }).catch((error) => {
+            console.error("Idle logout failed:", error);
+        });
+    }, 10 * 60 * 1000);
 }
 function startIdleTracking() {
     ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart'].forEach(e => {

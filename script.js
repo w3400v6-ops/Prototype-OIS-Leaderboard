@@ -1,23 +1,3 @@
-const firebaseConfig = {
-    apiKey: "AIzaSyBIIEQt0ryHNulKYNmfCliMywmSzzQuBls",
-    authDomain: "my-epic-database.firebaseapp.com",
-    databaseURL: "https://my-epic-database-default-rtdb.firebaseio.com",
-    projectId: "my-epic-database",
-    storageBucket: "my-epic-database.appspot.com",
-    messagingSenderId: "533989527206",
-    appId: "1:533989527206:web:d34c0a693e6f19dc43ae67"
-};
-
-// 1. Initialize (Using Compat/Namespaced Syntax)
-const app = firebase.initializeApp(firebaseConfig);
-const db = firebase.database();
-const auth = firebase.auth();
-const provider = new firebase.auth.GoogleAuthProvider();
-const analytics = firebase.analytics();
-
-// Forces the login picker to only show your school domain accounts
-provider.setCustomParameters({ hd: "oakbridge.edu.my" }); 
-
 const houseEls = Array.from(document.querySelectorAll('.house'));
 let currentData = {};
 let allLogs = {};
@@ -31,11 +11,10 @@ const errorMsg = document.getElementById('error-msg');
 db.ref("Logs").on("value", (snap) => {
     allLogs = snap.val() || {};
     
-    // Refresh logs for every house immediately so they are ready before the click
+    // Refresh only currently expanded house views when logs update
     houseEls.forEach(el => {
-        if (el.querySelector('.log-container')) {
+        if (el.classList.contains('expanded')) {
             renderHouseLogs(el, el.dataset.house);
-            refreshSidebarLogs();
         }
     });
 });
@@ -106,19 +85,6 @@ logoutBtn.addEventListener('click', () => {
 
 // 5. Leaderboard Core Logic
 function startLeaderboard() {
-
-    db.ref("Logs").on("value", (snap) => {
-        allLogs = snap.val() || {};
-        console.log("Logs synced for logged-in user");
-        
-        // Refresh any currently rendered cards
-        houseEls.forEach(el => {
-            if (el.querySelector('.log-container')) {
-                renderHouseLogs(el, el.dataset.house);
-            }
-        });
-    });
-
     db.ref('Houses').on('value', (snap) => {
         const data = snap.val();
         if (!data) return;
