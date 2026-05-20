@@ -23,7 +23,6 @@ if (user && user.email.endsWith('@oakbridge.edu.my')) {
         // Start all your listeners
         fetchInitialData();
         startLeaderboardListener();
-        startIdleTracking();
         startLogsListener();
         startRecycleBinListener();
     } else {
@@ -589,25 +588,42 @@ function restoreLog(recycleId, itemData) {
     .catch(err => alert("Restore failed: " + err.message));
 }
 
-let idleTimer;
-function resetTimer() {
-    clearTimeout(idleTimer);
-    idleTimer = setTimeout(() => {
-        auth.signOut().then(() => {
-            window.location.reload();
-        }).catch((error) => {
-            console.error("Idle logout failed:", error);
-        });
-    }, 10 * 60 * 1000);
-}
-function startIdleTracking() {
-    ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart'].forEach(e => {
-    document.addEventListener(e, resetTimer, true);
+//run in the console to verify points calculation matches the displayed scores
+function calculateTotalPoints(){
+    const calculatedPoints = {};
+    
+    // Calculate total points from logs for each house
+    Object.values(allLogs).forEach(log => {
+        if (log.houseId) {
+            if (!calculatedPoints[log.houseId]) {
+                calculatedPoints[log.houseId] = 0;
+            }
+            calculatedPoints[log.houseId] += log.pointsAdded;
+        }
     });
-    resetTimer();
+    
+    // Compare with currentData (which holds the actual scores)
+    console.log("=== Total Points Verification ===");
+    console.log("Calculated points from logs:", calculatedPoints);
+    console.log("Actual points in Houses:", currentData);
+    
+    let allMatch = true;
+    Object.keys(currentData).forEach(houseId => {
+        const calculated = calculatedPoints[houseId] || 0;
+        const actual = currentData[houseId];
+        
+        if (calculated !== actual) {
+            console.error(`❌ MISMATCH for ${houseId}: Calculated=${calculated}, Actual=${actual}`);
+            allMatch = false;
+        } else {
+            console.log(`✓ ${houseId}: ${calculated} points (Correct)`);
+        }
+    });
+    
+    if (allMatch) {
+        console.log("✓ All house points match!");
+    }
 }
-
-
 const logoutBtn = document.getElementById('pill-logout-link');
 
 logoutBtn.addEventListener('click', () => {

@@ -382,6 +382,44 @@ function animateCards(sortedEls, data) { // 🟢 Added 'data' as an argument
 }
 
 
+//run in the console to verify points calculation matches the displayed scores
+function calculateTotalPoints(){
+    const calculatedPoints = {};
+    
+    // Calculate total points from logs for each house
+    Object.values(allLogs).forEach(log => {
+        if (log.houseId) {
+            if (!calculatedPoints[log.houseId]) {
+                calculatedPoints[log.houseId] = 0;
+            }
+            calculatedPoints[log.houseId] += log.pointsAdded;
+        }
+    });
+    
+    // Compare with currentData (which holds the actual scores)
+    console.log("=== Total Points Verification ===");
+    console.log("Calculated points from logs:", calculatedPoints);
+    console.log("Actual points in Houses:", currentData);
+    
+    let allMatch = true;
+    Object.keys(currentData).forEach(houseId => {
+        const calculated = calculatedPoints[houseId] || 0;
+        const actual = currentData[houseId];
+        
+        if (calculated !== actual) {
+            console.error(`❌ MISMATCH for ${houseId}: Calculated=${calculated}, Actual=${actual}`);
+            allMatch = false;
+        } else {
+            console.log(`✓ ${houseId}: ${calculated} points (Correct)`);
+        }
+    });
+    
+    if (allMatch) {
+        console.log("✓ All house points match!");
+    }
+}
+
+
 // Button for IOS
 document.addEventListener('DOMContentLoaded', () => {
   const pill = document.querySelector('.admin-action-pill');
