@@ -385,7 +385,7 @@ function parseSchoolReport(data, housesData, studentData) {
 
         let entries = reportStudents
             .map(s => ({ name: s["Student Name"], score: parseFloat(s[actualKey]) }))
-            .filter(e => !isNaN(e.score))
+            .filter(e => !isNaN(e.score) && e.score >= 60)
             .sort((a, b) => b.score - a.score);
 
         let currentRank = 0;
