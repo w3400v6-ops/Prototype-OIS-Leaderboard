@@ -244,9 +244,18 @@ function normalizeGradeInput(rawGrade) {
 }
 
 function titleCaseName(name) {
-    return String(name || "")
+        return String(cleanStudentName(name) || "")
         .toLowerCase()
         .replace(/\b([a-z])/g, (match) => match.toUpperCase())
+        .trim();
+}
+
+function cleanStudentName(name) {
+    if (!name) return "";
+    return String(name)
+        .replace(/\\/g, '/')
+        .replace(/\bA[\/\\][PL]\b/gi, "")
+        .replace(/\s+/g, " ")
         .trim();
 }
 
@@ -261,7 +270,8 @@ function findStudentHouse(studentName, grade, studentData, housesData) {
     // Normalize name for comparison (case-insensitive, order-independent)
     const normalizeNameParts = (name) => {
         if (!name) return "";
-        const withoutParens = name.replace(/\([^)]*\)/g, "");
+        const cleanedName = cleanStudentName(name);
+        const withoutParens = cleanedName.replace(/\([^)]*\)/g, "");
         return withoutParens.toLowerCase().trim().split(/\s+/).filter(Boolean).sort().join(" ");
     };
     
