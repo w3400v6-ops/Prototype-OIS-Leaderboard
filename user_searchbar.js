@@ -5,6 +5,7 @@ const searchDelayMs = 300;
 let searchTimer = null;
 
 const searchInput = document.getElementById('studentSearch');
+const clearButton = document.getElementById('clear-search-btn');
 const dynamicView = document.getElementById('dynamic-log-view');
 const logList = document.getElementById('search-log-list');
 
@@ -12,6 +13,7 @@ const logList = document.getElementById('search-log-list');
 // 2. Updated Event Listener
 searchInput.addEventListener('input', (e) => {
     const query = e.target.value.trim();
+    clearButton.classList.toggle('hidden', query.length === 0);
 
     if (query.length === 0) {
         dynamicView.classList.add('hidden');
@@ -72,6 +74,15 @@ searchInput.addEventListener('input', (e) => {
             searchSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }, 100);
     }, searchDelayMs);
+});
+
+clearButton.addEventListener('click', () => {
+    searchInput.value = '';
+    clearButton.classList.add('hidden');
+    dynamicView.classList.add('hidden');
+    filteredLogsGlobal = [];
+    currentSearchPage = 1;
+    logList.innerHTML = '';
 });
 
 function renderPaginatedLogs() {

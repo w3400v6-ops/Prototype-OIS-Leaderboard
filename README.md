@@ -74,6 +74,8 @@ Because this is a static HTML/CSS/JS project, you can open `index.html` and `adm
   - Sets up Firebase Realtime Database access.
 - `const auth = firebase.auth()`
   - Sets up Firebase Authentication.
+- `const auth = firebase.analytics()`
+  - Sets up Google Analytics.
 - `const provider = new firebase.auth.GoogleAuthProvider()`
   - Configures Google sign-in for admins.
 - `provider.setCustomParameters({ hd: "oakbridge.edu.my" })`
@@ -212,6 +214,9 @@ Because this is a static HTML/CSS/JS project, you can open `index.html` and `adm
   - Creates and downloads a sample CSV template.
 - `renderStep()`
   - Displays help modal steps in the admin bulk upload help UI.
+
+## google6799ac2803a7a724
+- Google Search Console verification.
 
 ## Notes
 

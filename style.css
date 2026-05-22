@@ -462,7 +462,7 @@ body {
       position: relative;
       bottom: 0;
       font-size: 12px;
-      margin-top: 12px;
+      margin-top: 25px;
       margin-bottom: 12px;
       opacity: 25%;
     }
@@ -534,6 +534,33 @@ body {
     margin-top: 10px;
     max-width: 700px;
     height: 10px;
+}
+
+.clear-search-btn {
+    position: absolute;
+    right: 13px;
+    background: transparent;
+    border: none;
+    color: #888;
+    font-size: 1rem;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin-top: 8px;
+    width: 25px;
+    height: 25px;
+    border-radius: 50%;
+    transition: color 0.2s ease, background 0.2s ease;
+}
+
+.clear-search-btn:hover {
+    color: #333;
+    background: rgba(0,0,0,0.05);
+}
+
+.clear-search-btn.hidden {
+    display: none;
 }
 
 .search-bar-wrapper input:focus {
@@ -803,6 +830,14 @@ body {
     margin-top: 5px;
     
   }
+
+    .clear-search-btn {
+      right: 8px;
+      margin-bottom: 3px;
+      width: 25px;
+      height: 25px;
+      font-size: 0.9rem;
+    }
 
     .log-results-container {
     margin-top: 20px;
